@@ -1,0 +1,58 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ['./index.html', './src/**/*.{js,jsx}'],
+  theme: {
+    extend: {
+      colors: {
+        solar: {
+          bg:       '#06080d',
+          surface:  '#0d1117',
+          card:     '#111827',
+          card2:    '#162032',
+          border:   '#1e293b',
+          border2:  '#253044',
+          accent:   '#f59e0b',
+          accent2:  '#fbbf24',
+          green:    '#10b981',
+          blue:     '#3b82f6',
+          red:      '#ef4444',
+          text:     '#e2e8f0',
+          muted:    '#94a3b8',
+          dim:      '#475569',
+          orange:   '#f97316',
+        },
+      },
+      fontFamily: {
+        heading: ["'Chakra Petch'", 'monospace'],
+        body:    ["'DM Sans'", 'sans-serif'],
+      },
+      keyframes: {
+        fadeIn:  { from: { opacity: 0 }, to: { opacity: 1 } },
+        slideUp: { from: { opacity: 0, transform: 'translateY(12px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+        slideRight: { from: { opacity: 0, transform: 'translateX(100%)' }, to: { opacity: 1, transform: 'translateX(0)' } },
+        slideLeft: { from: { opacity: 0, transform: 'translateX(-100%)' }, to: { opacity: 1, transform: 'translateX(0)' } },
+        toastIn: { from: { opacity: 0, transform: 'translateX(20px)' }, to: { opacity: 1, transform: 'translateX(0)' } },
+        pulse:   { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.4 } },
+        spin:    { to: { transform: 'rotate(360deg)' } },
+        bounce:  { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-4px)' } },
+      },
+      animation: {
+        'fade-in':    'fadeIn 0.25s ease',
+        'slide-up':   'slideUp 0.3s ease',
+        'slide-right':'slideRight 0.3s ease',
+        'slide-left': 'slideLeft 0.3s ease',
+        'toast-in':   'toastIn 0.25s ease',
+        'pulse-slow': 'pulse 2s ease-in-out infinite',
+        'spin':       'spin 0.8s linear infinite',
+        'bounce-slow':'bounce 1.5s ease-in-out infinite',
+      },
+    },
+  },
+  plugins: [],
+  safelist: [
+    'bg-solar-green/20', 'text-solar-green', 'border-solar-green/30',
+    'bg-solar-accent/20', 'text-solar-accent', 'border-solar-accent/30',
+    'bg-solar-blue/20',  'text-solar-blue',  'border-solar-blue/30',
+    'bg-solar-red/20',   'text-solar-red',   'border-solar-red/30',
+  ],
+};

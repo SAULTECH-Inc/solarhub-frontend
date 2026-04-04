@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background-color: #06080d;
+    color: #e2e8f0;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #0d1117; }
+  ::-webkit-scrollbar-thumb { background: #253044; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #475569; }
+}
+
+@layer components {
+  /* Grid pattern background */
+  .bg-grid {
+    background-image: linear-gradient(rgba(30,41,59,0.08) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(30,41,59,0.08) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /* Glassmorphism nav */
+  .glass-nav {
+    background: rgba(6, 8, 13, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  /* Card hover effect */
+  .card-hover {
+    @apply transition-all duration-200 hover:-translate-y-1;
+  }
+
+  /* Accent glow */
+  .accent-glow { box-shadow: 0 0 24px rgba(245, 158, 11, 0.3); }
+
+  /* Input focus ring */
+  .solar-input {
+    @apply bg-solar-surface border border-solar-border text-solar-text rounded-lg px-3 py-2.5
+           text-sm w-full outline-none transition-colors duration-200
+           focus:border-solar-accent placeholder-solar-dim;
+  }
+
+  /* Primary button */
+  .btn-primary {
+    @apply bg-solar-accent text-black font-semibold rounded-lg px-4 py-2.5 text-sm
+           transition-all duration-200 cursor-pointer border-none
+           hover:bg-solar-accent2 disabled:opacity-50 disabled:cursor-not-allowed
+           inline-flex items-center gap-2 justify-center whitespace-nowrap;
+  }
+
+  /* Outline button */
+  .btn-outline {
+    @apply bg-transparent text-solar-text border border-solar-border2 rounded-lg px-4 py-2.5 text-sm
+           transition-all duration-200 cursor-pointer
+           hover:border-solar-accent hover:text-solar-accent
+           inline-flex items-center gap-2 justify-center whitespace-nowrap;
+  }
+
+  /* Ghost button */
+  .btn-ghost {
+    @apply bg-transparent text-solar-muted rounded-lg px-3 py-2 text-sm
+           transition-all duration-200 cursor-pointer border-none
+           hover:bg-solar-surface hover:text-solar-text
+           inline-flex items-center gap-2 justify-center whitespace-nowrap;
+  }
+
+  /* Badge variants */
+  .badge-amber { @apply bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-xs font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wide; }
+  .badge-green { @apply bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wide; }
+  .badge-blue  { @apply bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wide; }
+  .badge-red   { @apply bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wide; }
+
+  /* Section card */
+  .section-card {
+    @apply bg-solar-card border border-solar-border rounded-xl overflow-hidden;
+  }
+
+  /* Heading font */
+  .font-heading { font-family: 'Chakra Petch', monospace; }
+
+  /* Scrollbar hide */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Chat message */
+  .msg-ai   { @apply bg-solar-surface border border-solar-border rounded-2xl rounded-tl-sm px-4 py-3 text-sm max-w-[88%] leading-relaxed; }
+  .msg-user { @apply bg-solar-accent/20 border border-solar-accent/30 text-solar-text rounded-2xl rounded-tr-sm px-4 py-3 text-sm max-w-[88%] leading-relaxed self-end; }
+
+  /* Step connector */
+  .step-line  { @apply flex-1 h-0.5 bg-solar-border mx-2 transition-colors duration-300; }
+  .step-dot   { @apply w-9 h-9 rounded-full border-2 border-solar-border bg-solar-surface flex items-center justify-center font-heading text-sm font-semibold text-solar-dim transition-all duration-300; }
+  .step-dot.on { @apply border-solar-accent bg-solar-accent/20 text-solar-accent; }
+  .step-dot.dn { @apply border-solar-green bg-solar-green/20 text-solar-green; }
+
+  /* Chip (appliance picker) */
+  .chip { @apply inline-flex items-center gap-1.5 bg-solar-accent/20 border border-solar-accent/30 text-solar-accent rounded-full px-3 py-1 text-xs font-semibold m-0.5; }
+
+  /* Rec tab */
+  .rec-tab { @apply border-2 border-solar-border bg-solar-surface rounded-xl p-4 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:border-solar-border2 text-left; }
+  .rec-tab.active { @apply border-solar-accent bg-solar-accent/10; }
+
+  /* Order status timeline */
+  .track-dot      { @apply w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all duration-300; }
+  .track-dot.done { @apply bg-solar-green border-solar-green; }
+  .track-dot.on   { @apply bg-solar-accent border-solar-accent animate-pulse-slow; }
+  .track-dot.off  { @apply bg-solar-surface border-solar-border; }
+  .track-line     { @apply w-0.5 h-8 ml-[7px] transition-colors duration-300; }
+  .track-line.dn  { @apply bg-solar-green; }
+  .track-line.off { @apply bg-solar-border; }
+}
