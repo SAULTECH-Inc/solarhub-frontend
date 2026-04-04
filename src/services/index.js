@@ -73,3 +73,12 @@ export const categoriesService = {
   getBySlug:  (slug) => api.get(`/categories/${slug}`),
   getSchema:  (id)   => api.get(`/categories/${id}/spec-schema`),
 };
+
+// ── RFQs (Project Bidding) ──────────────────────────────────
+export const rfqsService = {
+  create:       (dto)          => api.post('/rfqs', dto),
+  getMyRfqs:    (p, l)         => api.get('/rfqs/my', { params: { page: p, limit: l } }),
+  acceptBid:    (bidId)        => api.patch(`/rfqs/bids/${bidId}/accept`),
+  getBoard:     (state, city, p, l) => api.get('/rfqs/board', { params: { state, city, page: p, limit: l } }),
+  submitBid:    (rfqId, dto)   => api.post(`/rfqs/${rfqId}/bids`, dto),
+};

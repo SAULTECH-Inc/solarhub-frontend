@@ -246,7 +246,11 @@ export default function Advisor() {
       const res = await advisorService.calculate(rows, preferences);
       const d = res?.data ?? res;
       const results = d?.results || d;
-      if (results?.recommendations) { setRecs(results); setAdjLoad(results.adjustedDailyLoad||0); setPeakLoad(results.peakLoad||0); }
+      if (results?.recommendations) { 
+        setRecs({ ...results, sessionId: d.session?.id }); 
+        setAdjLoad(results.adjustedDailyLoad||0); 
+        setPeakLoad(results.peakLoad||0); 
+      }
       else { throw new Error('No recommendations returned'); }
     } catch(e) {
       setError(e.message);
@@ -401,9 +405,21 @@ export default function Advisor() {
               <div className="section-card p-6">
                 {recs.recommendations?.[activeRec]&&<RecDetail rec={recs.recommendations[activeRec]} adjLoad={adjLoad}/>}
               </div>
-              <div className="text-center mt-6 space-y-2">
-                <Link to="/marketplace" className="btn-primary btn-lg">🛒 Find These Products on SolarHub</Link>
-                <div className="text-xs text-solar-dim">Estimates only — consult a certified installer before purchase</div>
+              <div className="text-center mt-6 space-y-4">
+                <div className="p-6 bg-gradient-to-br from-solar-accent/10 to-transparent border border-solar-accent/30 rounded-xl flex flex-col items-center">
+                  <h3 className="font-heading text-lg font-bold mb-2 text-solar-text">Want this specific setup installed?</h3>
+                  <p className="text-solar-muted text-sm mb-4">Skip the hassle of buying individual parts. Send this AI blueprint directly to verified engineers and sellers to get full installation quotes.</p>
+                  <Link to={`/request-quote?session=${recs.sessionId||''}&tier=${recs.recommendations[activeRec].id}`} className="btn-primary btn-lg shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:scale-[1.02] transition-transform">
+                    🛠️ Get Quotes from Engineers
+                  </Link>
+                </div>
+                <div className="flex items-center justify-center gap-4">
+                  <div className="h-px bg-solar-border flex-1 max-w-[150px]"></div>
+                  <span className="text-xs text-solar-dim font-heading uppercase tracking-widest">OR</span>
+                  <div className="h-px bg-solar-border flex-1 max-w-[150px]"></div>
+                </div>
+                <Link to="/marketplace" className="btn-outline btn-lg inline-flex mt-4 w-[400px] max-w-full justify-center">🛒 Buy Components Myself</Link>
+                <div className="text-[11px] text-solar-dim mt-2 tracking-wide">Estimates only — verify hardware availability</div>
               </div>
             </>
           ) : null}

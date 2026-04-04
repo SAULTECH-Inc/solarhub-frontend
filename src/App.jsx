@@ -21,6 +21,9 @@ import EngineerProfile from './pages/EngineerProfile';
 import BecomeEngineer from './pages/BecomeEngineer';
 import Profile        from './pages/Profile';
 import Messages       from './pages/Messages';
+import RequestQuote   from './pages/RequestQuote';
+import JobBoard       from './pages/JobBoard';
+import MyProjects     from './pages/MyProjects';
 
 export default function App() {
   return (
@@ -45,6 +48,9 @@ export default function App() {
             <Route path="/become-engineer" element={<BecomeEngineer />} />
             <Route path="/profile"         element={<Profile />} />
             <Route path="/messages"        element={<Messages />} />
+            <Route path="/request-quote"   element={<RequestQuote />} />
+            <Route path="/projects"        element={<JobBoard />} />
+            <Route path="/my-projects"     element={<MyProjects />} />
             <Route path="*" element={
               <div className="text-center py-24 text-solar-dim">
                 <div className="text-5xl mb-4">🌞</div>
