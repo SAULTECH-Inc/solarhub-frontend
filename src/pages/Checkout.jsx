@@ -16,7 +16,7 @@ export default function Checkout() {
     firstName: user?.firstName||'', lastName: user?.lastName||'',
     phone:'', email: user?.email||'',
     address:'', city:'', state:'Lagos', landmark:'',
-    payment:'card', deliveryMethod:'standard', currency:'NGN',
+    payment:'online', deliveryMethod:'standard', currency:'NGN',
   });
 
   const items = cart?.items || [];
@@ -35,17 +35,34 @@ export default function Checkout() {
         deliveryAddress:{ firstName:form.firstName, lastName:form.lastName,
           phone:form.phone, address:form.address, city:form.city, state:form.state, country:'Nigeria' },
         deliveryMethod:form.deliveryMethod, deliveryFee, currency:form.currency,
+        paymentMethod: form.payment
       };
       const result = await placeOrder(dto);
       if (!result.success) return;
       const orderId = result.order?.id;
-      if (orderId) {
+      
+      // If payment is purely Cash on Delivery, skip online gateway and mark success
+      if (form.payment === 'cash') {
+        toast('Order placed successfully via Payment on Delivery', 'ok');
+        nav('/orders');
+        return;
+      }
+      
+      // Attempt online payment routing
+      if (orderId && form.payment === 'online') {
         try {
-          const payRes = await paymentsService.initiate(orderId, form.currency, form.payment);
+          const payRes = await paymentsService.initiate(orderId, form.currency, 'card');
           const pd = payRes?.data ?? payRes;
           if (pd?.paymentUrl) { window.location.href = pd.paymentUrl; return; }
-        } catch(e) { console.warn('Payment init failed:', e.message); }
+          if (pd?.clientSecret) { window.location.href = `/orders?payment_intent=${pd.clientSecret}`; return; }
+          throw new Error('Payment gateway did not return a valid checkout URL.');
+        } catch(e) { 
+          toast('Order placed but online payment failed to load. Please try paying from the Orders page.', 'err');
+          console.warn('Payment init failed:', e);
+          return; // Stop navigation so user can see error toast and explicitly click /orders on their own or retry
+        }
       }
+      
       nav('/orders');
     } catch(e) { toast(e.message,'err'); }
     finally { setSaving(false); }
@@ -102,7 +119,10 @@ export default function Checkout() {
             <div className="section-card p-6 animate-slide-up">
               <h2 className="font-heading text-base font-semibold mb-5">Payment Method</h2>
               <div className="space-y-3 mb-4">
-                {[{val:'card',label:'Debit/Credit Card',ico:'💳',sub:'Visa, Mastercard, Verve'},{val:'bank_transfer',label:'Bank Transfer',ico:'🏦',sub:'Pay to SolarHub escrow'},{val:'ussd',label:'USSD (*737# etc.)',ico:'📱',sub:'No internet needed'},{val:'cash',label:'Payment on Delivery',ico:'💵',sub:'Cash at delivery'}].map(m=>(
+                {[
+                  {val:'online',label:'Pay Online (Card, Transfer, USSD)',ico:'💳',sub:'Securely processed by Paystack/Stripe'},
+                  {val:'cash',label:'Payment on Delivery',ico:'💵',sub:'Pay when your items arrive'}
+                ].map(m=>(
                   <label key={m.val} className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${form.payment===m.val?'border-solar-accent bg-solar-accent/5':'border-solar-border hover:border-solar-border2'}`}>
                     <input type="radio" name="pay" value={m.val} checked={form.payment===m.val} onChange={e=>set('payment',e.target.value)} className="accent-solar-accent"/>
                     <span className="text-xl">{m.ico}</span>
