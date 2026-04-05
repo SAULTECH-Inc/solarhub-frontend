@@ -6,8 +6,8 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
-      devOptions: { enabled: false }, // Prevent infinite reload loops in dev mode
+      registerType: 'prompt', // Changed to prompt to prevent infinite reload loops in dev mode while still allowing PWA testing
+      devOptions: { enabled: true, type: 'module' }, // Enable in dev so we can test the install prompt
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
         runtimeCaching: [
