@@ -401,8 +401,8 @@ export default function Advisor() {
   return (
     <div className="max-w-[1100px] mx-auto px-5 py-10">
       <SEO
-        title="AI Solar System Advisor — Design Your Solar Setup"
-        description="Tell our AI your appliances and power needs. Get 3 complete solar system designs — Budget, Performance, and All-in-One — with part lists and ₦ cost estimates tailored for Nigeria."
+        title="AI Solar System Advisor: Design Your Solar Setup"
+        description="Tell our AI your appliances and power needs. Get 3 complete solar system designs (Budget, Performance and All-in-One) with part lists and cost estimates tailored for Nigeria."
         canonical="/advisor"
         breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'Solar System Advisor' }]}
       />

@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { engineersService, chatService } from '../services/index';
 import { useApp } from '../context/AppContext';
+import SocialLinks from '../components/SocialLinks';
+import SEO, { personSchema } from '../components/SEO';
+import { Wrench, MapPin, CheckCircle, Trophy, Award, Zap } from 'lucide-react';
 
 const STARS = (r) => '★'.repeat(Math.round(r || 0)) + '☆'.repeat(5 - Math.round(r || 0));
 
@@ -30,13 +33,12 @@ export default function EngineerProfile() {
 
   if (error || !eng) return (
     <div className="max-w-[800px] mx-auto px-5 py-20 text-center">
-      <div className="text-5xl mb-4">🔧</div>
+      <div className="flex justify-center mb-4"><Wrench size={48} className="text-solar-dim opacity-40"/></div>
       <h2 className="font-heading text-xl mb-4">{error || 'Engineer not found'}</h2>
       <button onClick={() => navigate('/engineers')} className="btn-primary">← Back to Engineers</button>
     </div>
   );
 
-  const displayName = eng.fullName || (eng.user ? `${eng.user.firstName} ${eng.user.lastName || ''}`.trim() : 'Engineer');
   const avatar = eng.profilePhoto || eng.user?.avatar;
 
   async function contactEngineer() {
@@ -58,8 +60,25 @@ export default function EngineerProfile() {
     }
   }
 
+  const displayName = eng.fullName || (eng.user ? `${eng.user.firstName} ${eng.user.lastName || ''}`.trim() : 'Engineer');
+
   return (
     <div className="max-w-[900px] mx-auto px-5 py-10">
+      <SEO
+        title={`${displayName} | Solar Engineer in ${eng.city}, ${eng.state}`}
+        description={eng.bio
+          ? eng.bio.slice(0, 155)
+          : `Hire ${displayName}, a certified solar engineer in ${eng.city}, ${eng.state} with ${eng.yearsOfExperience}+ years experience. Available for solar installations across Nigeria.`}
+        canonical={`/engineers/${eng.id}`}
+        ogType="profile"
+        ogImage={eng.profilePhoto || undefined}
+        breadcrumbs={[
+          { name: 'Home', url: '/' },
+          { name: 'Engineers', url: '/engineers' },
+          { name: displayName },
+        ]}
+        jsonLd={personSchema(eng)}
+      />
       <button onClick={() => navigate('/engineers')} className="btn-ghost text-sm mb-6">← Back to Engineers</button>
 
       <div className="grid md:grid-cols-[280px_1fr] gap-8">
@@ -72,16 +91,16 @@ export default function EngineerProfile() {
             ) : (
               <div className="w-24 h-24 rounded-full bg-gradient-to-br from-solar-accent to-solar-orange
                               flex items-center justify-center text-3xl font-bold text-black mx-auto mb-4">
-                {displayName[0]?.toUpperCase() || '⚡'}
+                {displayName[0]?.toUpperCase() || '?'}
               </div>
             )}
             <h1 className="font-heading text-lg font-bold text-solar-text">{displayName}</h1>
             {eng.isVerified && (
               <div className="inline-flex items-center gap-1.5 mt-1.5 bg-solar-accent/10 text-solar-accent text-xs px-2.5 py-1 rounded-full">
-                ✓ Verified by SolarHub
+                ✓ Verified by Solar Maket
               </div>
             )}
-            <p className="text-solar-muted text-sm mt-2">📍 {eng.city}, {eng.state}</p>
+            <p className="text-solar-muted text-sm mt-2 flex items-center justify-center gap-1"><MapPin size={13}/>{eng.city}, {eng.state}</p>
             <div className="flex items-center justify-center gap-1.5 mt-2">
               <span className="text-solar-accent text-sm">{STARS(eng.averageRating)}</span>
               <span className="text-xs text-solar-dim">({eng.reviewCount} reviews)</span>
@@ -99,16 +118,23 @@ export default function EngineerProfile() {
             <button
               onClick={contactEngineer} disabled={messaging}
               className="btn-primary w-full mt-4 disabled:opacity-50">
-              {messaging ? '⏳ Connecting…' : '📩 Contact Engineer'}
+              {messaging ? 'Connecting…' : 'Contact Engineer'}
             </button>
+
+            {eng.socialLinks && Object.values(eng.socialLinks).some(Boolean) && (
+              <div className="mt-4 pt-4 border-t border-solar-border">
+                <div className="text-[10px] text-solar-dim uppercase tracking-widest font-medium mb-2">Also reach me on</div>
+                <SocialLinks links={eng.socialLinks} className="justify-center" />
+              </div>
+            )}
           </div>
 
           {/* Quick Stats */}
           <div className="section-card p-5 space-y-3">
             {[
-              { icon: '🏆', label: 'Years of Experience', val: `${eng.yearsOfExperience}+ years` },
-              { icon: '✅', label: 'Jobs Completed',      val: eng.completedJobs },
-              { icon: '📍', label: 'Service Radius',      val: `${eng.serviceRadiusKm ?? 50} km` },
+              { icon: <Trophy size={13} className="text-solar-accent"/>, label: 'Years of Experience', val: `${eng.yearsOfExperience}+ years` },
+              { icon: <CheckCircle size={13} className="text-solar-green"/>, label: 'Jobs Completed', val: eng.completedJobs },
+              { icon: <MapPin size={13} className="text-solar-accent"/>, label: 'Service Radius', val: `${eng.serviceRadiusKm ?? 50} km` },
             ].map(s => (
               <div key={s.label} className="flex items-center justify-between">
                 <span className="text-xs text-solar-muted flex items-center gap-1.5">{s.icon} {s.label}</span>
@@ -135,7 +161,7 @@ export default function EngineerProfile() {
               <div className="flex flex-wrap gap-2">
                 {eng.specializations.map(s => (
                   <span key={s} className="bg-solar-accent/10 text-solar-accent border border-solar-accent/25 rounded-full px-3 py-1 text-xs font-medium">
-                    ⚡ {s}
+                    {s}
                   </span>
                 ))}
               </div>
@@ -149,7 +175,7 @@ export default function EngineerProfile() {
               <div className="space-y-3">
                 {eng.certifications.map((c, i) => (
                   <div key={i} className="flex items-start gap-3 bg-solar-surface rounded-xl p-3">
-                    <span className="text-xl">🏅</span>
+                    <Award size={18} className="text-solar-accent flex-shrink-0 mt-0.5"/>
                     <div>
                       <div className="font-medium text-sm text-solar-text">{c.name}</div>
                       <div className="text-xs text-solar-muted">{c.issuer}{c.year ? ` · ${c.year}` : ''}</div>

@@ -3,14 +3,25 @@ import { Link } from 'react-router-dom';
 import { productsService } from '../services/products.service';
 import { categoriesService } from '../services/index';
 import ProductCard from '../components/ProductCard';
+import SEO, { orgSchema, websiteSchema, itemListSchema } from '../components/SEO';
+import { Sun, BatteryFull, Zap, Settings2, Lightbulb, Wrench } from 'lucide-react';
+
+const CAT_SVG = {
+  'solar-panels':       <Sun size={32} className="text-solar-accent" />,
+  'batteries':          <BatteryFull size={32} className="text-solar-accent" />,
+  'inverters':          <Zap size={32} className="text-solar-accent" />,
+  'charge-controllers': <Settings2 size={32} className="text-solar-accent" />,
+  'solar-lights':       <Lightbulb size={32} className="text-solar-accent" />,
+  'accessories':        <Wrench size={32} className="text-solar-accent" />,
+};
 
 const FALLBACK_CATS = [
-  { key:'solar-panels',      label:'Solar Panels',        icon:'☀️', desc:'Mono, Poly, Bifacial, HJT' },
-  { key:'batteries',         label:'Batteries',           icon:'🔋', desc:'LiFePO4, AGM, Gel, Flooded' },
-  { key:'inverters',         label:'Inverters',           icon:'⚡', desc:'Pure Sine, Hybrid, Grid-Tie' },
-  { key:'charge-controllers',label:'Controllers',         icon:'🔌', desc:'MPPT & PWM' },
-  { key:'solar-lights',      label:'Solar Lights',        icon:'💡', desc:'Street, Garden, Flood' },
-  { key:'accessories',       label:'Accessories',         icon:'🔧', desc:'Cables, Mounts' },
+  { key:'solar-panels',      label:'Solar Panels',  desc:'Mono, Poly, Bifacial, HJT' },
+  { key:'batteries',         label:'Batteries',     desc:'LiFePO4, AGM, Gel, Flooded' },
+  { key:'inverters',         label:'Inverters',     desc:'Pure Sine, Hybrid, Grid-Tie' },
+  { key:'charge-controllers',label:'Controllers',   desc:'MPPT & PWM' },
+  { key:'solar-lights',      label:'Solar Lights',  desc:'Street, Garden, Flood' },
+  { key:'accessories',       label:'Accessories',   desc:'Cables, Mounts' },
 ];
 
 const STATS = [
@@ -41,6 +52,15 @@ export default function Home() {
 
   return (
     <div className="bg-grid min-h-screen">
+      <SEO
+        canonical="/"
+        description="Nigeria's premier solar marketplace. Buy solar panels, batteries, inverters & charge controllers from verified sellers. Hire certified solar engineers. AI-powered system advisor."
+        jsonLd={[
+          orgSchema(),
+          websiteSchema(),
+          ...(featured.length ? [itemListSchema(featured, 'Featured Solar Products Nigeria')] : []),
+        ]}
+      />
       <section className="px-5 pt-20 pb-14 text-center"
         style={{ background: 'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(245,158,11,0.08), transparent)' }}>
         <div className="max-w-3xl mx-auto">
@@ -53,11 +73,11 @@ export default function Home() {
             Buy & Sell <span className="text-solar-accent">Solar</span> Gadgets<br/>with Expert Precision
           </h1>
           <p className="text-solar-muted text-lg leading-relaxed mb-8 max-w-xl mx-auto">
-            Deep product specs, verified sellers, AI-powered system advisor and full ecommerce — all in one platform.
+            Deep product specs, verified sellers, an AI-powered system advisor and full ecommerce. All in one platform.
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
             <Link to="/marketplace" className="btn-primary btn-lg">Browse Products</Link>
-            <Link to="/advisor" className="btn-outline btn-lg">⚡ Solar Advisor</Link>
+            <Link to="/advisor" className="btn-outline btn-lg inline-flex items-center gap-1.5"><Zap size={16}/>Solar Advisor</Link>
           </div>
           <div className="flex gap-10 justify-center mt-14 pt-10 border-t border-solar-border flex-wrap">
             {STATS.map(s => (
@@ -75,11 +95,13 @@ export default function Home() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-heading text-xl font-semibold">Browse by <span className="text-solar-accent">Category</span></h2>
           </div>
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
             {cats.map(cat => (
               <Link key={cat.key} to={`/marketplace?cat=${cat.key}`}
                 className="bg-solar-card border border-solar-border rounded-xl p-4 text-center card-hover group">
-                <span className="text-3xl mb-2 block group-hover:scale-110 transition-transform">{cat.icon}</span>
+                <span className="mb-2 flex justify-center group-hover:scale-110 transition-transform">
+                  {CAT_SVG[cat.key] || <Zap size={32} className="text-solar-accent" />}
+                </span>
                 <h3 className="font-heading text-xs font-semibold text-solar-text mb-1">{cat.label}</h3>
                 <p className="text-[10.5px] text-solar-dim leading-snug hidden md:block">{cat.desc}</p>
               </Link>
@@ -104,7 +126,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="text-center py-12 text-solar-dim">
-              <div className="text-4xl mb-3">☀️</div>
+              <div className="flex justify-center mb-3"><Sun size={40} className="text-solar-accent opacity-60"/></div>
               <p>Be the first to list a product!</p>
               <Link to="/sell" className="btn-primary mt-4 inline-flex">List a Product</Link>
             </div>
@@ -117,10 +139,10 @@ export default function Home() {
             <div className="max-w-lg">
               <h2 className="font-heading text-2xl font-bold mb-3">Not sure what solar system you need?</h2>
               <p className="text-solar-muted text-sm leading-relaxed">
-                Tell our AI your appliances and power needs. It designs <strong className="text-solar-text">3 complete system options</strong> — Budget, Performance, and All-in-One — with full part lists and ₦ cost estimates.
+                Tell our AI your appliances and power needs. It designs <strong className="text-solar-text">3 complete system options</strong> (Budget, Performance and All-in-One) with full part lists and ₦ cost estimates.
               </p>
             </div>
-            <Link to="/advisor" className="btn-primary btn-lg flex-shrink-0">⚡ Try Solar Advisor</Link>
+            <Link to="/advisor" className="btn-primary btn-lg flex-shrink-0 inline-flex items-center gap-1.5"><Zap size={16}/>Try Solar Advisor</Link>
           </div>
         </section>
       </div>
