@@ -18,21 +18,26 @@ export default function AuthModal() {
   async function submit() {
     setErr(''); setLoading(true);
     try {
+      if (step === 'otp') {
+        const { authService } = await import('../services/auth.service');
+        await authService.verifyEmail(form.email, otp);
+        const r = await login({ email: form.email, password: form.pass });
+        if (!r.success) setErr(r.error || 'Login failed');
+        return;
+      }
       if (isSignup) {
-        if (step === 'otp') {
-          const { authService } = await import('../services/auth.service');
-          await authService.verifyEmail(form.email, otp);
-          // Auto-login after verify
-          const r = await login({ email: form.email, password: form.pass });
-          if (!r.success) setErr(r.error || 'Login failed');
-          return;
-        }
         const r = await register({ firstName: form.name.split(' ')[0], lastName: form.name.split(' ').slice(1).join(' '), email: form.email, password: form.pass, phone: form.phone });
-        if (r.success) { setStep('otp'); }
+        if (r.success) setStep('otp');
         else setErr(r.error || 'Registration failed');
       } else {
         const r = await login({ email: form.email, password: form.pass });
-        if (!r.success) setErr(r.error || 'Login failed');
+        if (!r.success) {
+          if (r.data?.requiresVerification) {
+            setStep('otp');
+          } else {
+            setErr(r.error || 'Login failed');
+          }
+        }
       }
     } catch(e) { setErr(e.message); }
     finally { setLoading(false); }
@@ -49,7 +54,7 @@ export default function AuthModal() {
           <button onClick={()=>dispatch({type:'CLOSE_AUTH'})} className="text-solar-muted hover:text-solar-text bg-solar-surface rounded-lg w-8 h-8 flex items-center justify-center text-lg">✕</button>
         </div>
         <p className="text-solar-muted text-sm mb-5">
-          {step==='otp'?`Enter the 6-digit code sent to ${form.email}`:isSignup?'Join thousands of solar buyers & sellers':'Log in to your SolarHub account'}
+          {step==='otp'?`Enter the 6-digit code sent to ${form.email}`:isSignup?'Join thousands of solar buyers & sellers':'Log in to your Solar Maket account'}
         </p>
 
         {step==='otp'?(
@@ -83,7 +88,7 @@ export default function AuthModal() {
               <button onClick={submit} disabled={loading} className="btn-primary w-full py-3 text-sm">
                 {loading?<span className="flex items-center gap-2 justify-center"><span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"/>Please wait…</span>:isSignup?'Create Account':'Log In'}
               </button>
-              <p className="text-center text-xs text-solar-dim">By continuing you agree to SolarHub's <span className="text-solar-accent cursor-pointer">Terms</span></p>
+              <p className="text-center text-xs text-solar-dim">By continuing you agree to Solar Maket's <span className="text-solar-accent cursor-pointer">Terms</span></p>
             </div>
           </>
         )}

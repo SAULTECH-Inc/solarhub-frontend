@@ -43,7 +43,7 @@ api.interceptors.response.use(
     const orig = err.config;
     if (err.response?.status === 401 && !orig._retry) {
       const refresh = tokenStorage.getRefresh();
-      if (!refresh) { tokenStorage.clearTokens(); window.location.href = '/'; return Promise.reject(err); }
+      if (!refresh) { tokenStorage.clearTokens(); window.dispatchEvent(new CustomEvent('auth:expired')); return Promise.reject(err); }
 
       if (refreshing) {
         return new Promise((resolve, reject) => queue.push({ resolve, reject }))
@@ -64,16 +64,19 @@ api.interceptors.response.use(
       } catch (refreshErr) {
         processQueue(refreshErr, null);
         tokenStorage.clearTokens();
-        window.location.href = '/';
+        window.dispatchEvent(new CustomEvent('auth:expired'));
         return Promise.reject(refreshErr);
       } finally {
         refreshing = false;
       }
     }
 
-    // Unwrap error message for consumers
+    // Unwrap error message for consumers; attach full response data for structured errors
     const msg = err.response?.data?.message || err.message || 'Something went wrong';
-    return Promise.reject(new Error(Array.isArray(msg) ? msg.join(', ') : msg));
+    const error = new Error(Array.isArray(msg) ? msg.join(', ') : msg);
+    error.data = err.response?.data;
+    error.statusCode = err.response?.status;
+    return Promise.reject(error);
   },
 );
 

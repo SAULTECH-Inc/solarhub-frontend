@@ -8,13 +8,13 @@ import { connectSocket, disconnectSocket } from '../lib/socket';
 const Ctx = createContext(null);
 
 export const ORDER_STEPS = [
-  { status: 'pending',       label: 'Order Placed',         icon: '📋' },
-  { status: 'confirmed',     label: 'Payment Confirmed',    icon: '✅' },
-  { status: 'processing',    label: 'Processing',           icon: '⚙️'  },
-  { status: 'dispatched',    label: 'Dispatched',           icon: '🏭' },
-  { status: 'in_transit',    label: 'In Transit',           icon: '🚚' },
-  { status: 'out_delivery',  label: 'Out for Delivery',     icon: '🛵' },
-  { status: 'delivered',     label: 'Delivered',            icon: '🎉' },
+  { status: 'pending',       label: 'Order Placed'      },
+  { status: 'confirmed',     label: 'Payment Confirmed' },
+  { status: 'processing',    label: 'Processing'        },
+  { status: 'dispatched',    label: 'Dispatched'        },
+  { status: 'in_transit',    label: 'In Transit'        },
+  { status: 'out_delivery',  label: 'Out for Delivery'  },
+  { status: 'delivered',     label: 'Delivered'         },
 ];
 
 function reducer(state, action) {
@@ -71,15 +71,64 @@ export function AppProvider({ children }) {
     try { const res = await notificationsService.getUnread(); dispatch({ type: 'SET_NOTIF_COUNT', payload: (res?.data ?? res)?.count ?? 0 }); } catch {}
   }, []);
 
+  // Decode a JWT and return its payload (no verification — backend does that)
+  const decodeToken = (token) => {
+    try { return JSON.parse(atob(token.split('.')[1])); } catch { return null; }
+  };
+
+  // Silently expire the session and prompt re-login
+  const expireSession = useCallback(() => {
+    tokenStorage.clearTokens();
+    disconnectSocket();
+    dispatch({ type: 'LOGOUT' });
+    dispatch({ type: 'OPEN_AUTH', payload: 'login' });
+    toast('Your session has expired. Please log in again.', 'err');
+  }, [toast]);
+
+  // Validate the current access token; trigger expireSession if it can't be renewed
+  const validateSession = useCallback(async () => {
+    const token = tokenStorage.getAccess();
+    if (!token) return;
+    try { await authService.me(); }
+    catch { expireSession(); }
+  }, [expireSession]);
+
   useEffect(() => {
     const token = tokenStorage.getAccess();
     if (!token) { dispatch({ type: 'SET_AUTH_LOADING', payload: false }); return; }
+
+    let expiryTimer = null;
+
     authService.me()
       .then(res => {
         dispatch({ type: 'SET_USER', payload: res?.data ?? res });
         syncCart(); syncFavourites(); syncNotifications(); connectSocket();
+
+        // Schedule a proactive session check ~1 min before the access token expires
+        const payload = decodeToken(tokenStorage.getAccess());
+        if (payload?.exp) {
+          const msUntilExpiry = payload.exp * 1000 - Date.now();
+          const delay = msUntilExpiry - 60_000; // 1 min before expiry
+          if (delay > 0) expiryTimer = setTimeout(validateSession, delay);
+        }
       })
       .catch(() => { tokenStorage.clearTokens(); dispatch({ type: 'SET_AUTH_LOADING', payload: false }); });
+
+    // Listen for forced logout from the axios interceptor (refresh token expired)
+    const handleExpired = () => expireSession();
+    window.addEventListener('auth:expired', handleExpired);
+
+    // Re-check session when user returns to the tab
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') validateSession();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearTimeout(expiryTimer);
+      window.removeEventListener('auth:expired', handleExpired);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   const login = useCallback(async (credentials) => {
@@ -90,9 +139,9 @@ export function AppProvider({ children }) {
       dispatch({ type: 'SET_USER', payload: user });
       dispatch({ type: 'CLOSE_AUTH' });
       await syncCart(); await syncFavourites(); await syncNotifications(); connectSocket();
-      toast('Welcome back, ' + user.firstName + '! 🎉', 'ok');
+      toast('Welcome back, ' + user.firstName + '!', 'ok');
       return { success: true };
-    } catch (e) { return { success: false, error: e.message }; }
+    } catch (e) { return { success: false, error: e.message, data: e.data }; }
   }, [toast, syncCart, syncFavourites, syncNotifications]);
 
   const register = useCallback(async (dto) => {
@@ -145,7 +194,7 @@ export function AppProvider({ children }) {
       const order = res?.data ?? res;
       dispatch({ type: 'ADD_ORDER', payload: order });
       await clearCart();
-      toast('Order placed successfully! 🎉', 'ok');
+      toast('Order placed successfully!', 'ok');
       return { success: true, order };
     } catch (e) { toast(e.message, 'err'); return { success: false, error: e.message }; }
   }, [clearCart, toast]);
