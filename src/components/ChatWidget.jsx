@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { api } from '../lib/apiClient';
 import { getSocket, connectSocket } from '../lib/socket';
 import { MessageCircle, X, Bot, User, SendHorizonal, Star, MapPin, BadgeCheck } from 'lucide-react';
 
@@ -137,31 +138,25 @@ export default function ChatWidget() {
       // Fallback timeout if no response in 10s
       setTimeout(() => setLoading(false), 10000);
     } else {
-      // Unauthenticated: local mock response
-      if (mode==='human') {
+      if (mode === 'human') {
         setTimeout(() => {
           setLoading(false);
           setMsgs(m => [...m, {role:'human', text:humanReply(msg), time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}]);
-        }, 1200+Math.random()*1000);
+        }, 1200 + Math.random() * 1000);
       } else {
-        // Call API directly (no auth)
+        // REST fallback — works without socket
+        const history = msgs
+          .filter(m => m.role === 'user' || m.role === 'ai')
+          .slice(-6)
+          .map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text }));
         try {
-          const res = await fetch('/api/v1/advisor/calculate', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ appliances:[], preferences:{}, _chatQuery:msg })
-          });
-        } catch {}
-        // Simulated AI response
-        const replies = [
-          "Great question! For solar sizing in Nigeria, you'll need to calculate your daily Wh load first. Use our Solar Advisor for a complete 3-option system design!",
-          "Panel prices in Nigeria typically range from ₦160k–₦320k for quality 400–580W modules. Check our marketplace for current listings.",
-          "We deliver nationwide! Lagos & Abuja: 2–3 days, other states: 3–5 days. Sign in to place an order.",
-          "For your appliances, I'd recommend starting with our Solar Advisor — it calculates panels, batteries, and inverter size automatically.",
-        ];
-        setTimeout(() => {
-          setLoading(false);
-          setMsgs(m => [...m, {role:'ai', text:replies[Math.floor(Math.random()*replies.length)], time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}]);
-        }, 1200);
+          const res = await api.post('/advisor/chat', { message: msg, history });
+          const reply = res?.data?.reply || res?.reply || "I couldn't get a response. Please try again.";
+          setMsgs(m => [...m, {role:'ai', text:reply, time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}]);
+        } catch {
+          setMsgs(m => [...m, {role:'ai', text:"I'm having trouble connecting. Please try again in a moment.", time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}]);
+        }
+        setLoading(false);
       }
     }
   }
