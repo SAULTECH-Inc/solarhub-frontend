@@ -8,7 +8,7 @@ let socket = null;
 export function getSocket() {
   if (!socket) {
     socket = io(`${SOCKET_URL}/chat`, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling'],   // Vercel serverless doesn't support WebSocket upgrades
       autoConnect: false,
       auth: { token: tokenStorage.getAccess() },
       reconnection: true,

@@ -4,6 +4,7 @@
 
 [build.environment]
   VITE_API_URL = "https://solarhub-backend.vercel.app/api/v1"
+  VITE_SOCKET_URL = "https://solarhub-backend.vercel.app"
   NODE_VERSION = "20"
 
 # SPA routing — redirect all paths to index.html
