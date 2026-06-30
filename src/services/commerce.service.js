@@ -27,11 +27,22 @@ export const deliveryService = {
   addEvent:    (orderId, dto) => api.post(`/delivery/order/${orderId}/event`, dto),
 };
 
+// ── Seller Products ───────────────────────────────────────────
+export const sellerProductsService = {
+  getMyProducts: (p, l)  => api.get('/products/seller/my-products', { params: { page: p, limit: l } }),
+  getEditLock:   (id)    => api.get(`/products/seller/edit-lock/${id}`),
+  getQuota:      ()      => api.get('/products/seller/listing-quota'),
+  update:        (id, dto) => api.patch(`/products/${id}`, dto),
+  delete:        (id)    => api.delete(`/products/${id}`),
+};
+
 // ── Payments ──────────────────────────────────────────────────
 export const paymentsService = {
-  initiate: (orderId, currency, method) =>
-    api.post('/payments/initiate', { orderId, currency, method }),
+  initiate: (orderId, currency, method, customerName) =>
+    api.post('/payments/initiate', { orderId, currency, method, customerName }),
   verifyPaystack: (ref) => api.get(`/payments/verify/paystack/${ref}`),
+  verifyFlutterwave: (txId, txRef) =>
+    api.get('/payments/verify/flutterwave', { params: { txId, txRef } }),
   refund: (paymentId, amount, reason) =>
     api.post(`/payments/${paymentId}/refund`, { amount, reason }),
   getByOrder: (orderId) => api.get(`/payments/order/${orderId}`),

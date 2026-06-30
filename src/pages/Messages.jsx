@@ -4,6 +4,11 @@ import { useApp } from '../context/AppContext';
 import { chatService } from '../services';
 import { getSocket, connectSocket } from '../lib/socket';
 import { formatDistanceToNow } from 'date-fns';
+import SEO from '../components/SEO';
+import { MessageCircle, User, Bot, Headphones, Inbox } from 'lucide-react';
+
+// Keeps first occurrence of each room id — prevents duplicate key warnings from racing fetches
+const dedup = arr => arr.filter((r, i, a) => a.findIndex(x => x.id === r.id) === i);
 
 export default function Messages() {
   const { user, dispatch } = useApp();
@@ -30,8 +35,7 @@ export default function Messages() {
     if (!user) return;
     chatService.getRooms(1, 50).then(res => {
       const data = res?.data || res;
-      // Filter out AI_SUPPORT rooms just in case, though we want essentially all P2P / Support history
-      setRooms(data.data || []);
+      setRooms(dedup(data.data || []));
       setLoading(false);
     }).catch(err => {
       console.error('Failed to load rooms', err);
@@ -54,13 +58,11 @@ export default function Messages() {
           const updated = [...prevRooms];
           const idx = updated.findIndex(r => r.id === msg.roomId);
           if (idx !== -1) {
-            updated[idx].lastMessageAt = new Date().toISOString();
-            updated[idx].messageCount += 1;
-            // bump to top
+            updated[idx] = { ...updated[idx], lastMessageAt: new Date().toISOString(), messageCount: (updated[idx].messageCount || 0) + 1 };
             const [room] = updated.splice(idx, 1);
             updated.unshift(room);
           }
-          return updated;
+          return dedup(updated);
         });
       }
     };
@@ -81,10 +83,9 @@ export default function Messages() {
     const r = rooms.find(rc => rc.id === activeRoomId);
     if (!r) {
       chatService.getRoomById(activeRoomId).then(res => {
-        setActiveRoom(res?.data || res);
-        if (!rooms.find(x => x.id === activeRoomId)) {
-          setRooms(prev => [res?.data || res, ...prev]);
-        }
+        const room = res?.data || res;
+        setActiveRoom(room);
+        setRooms(prev => dedup([room, ...prev]));
       }).catch(console.error);
     } else {
       setActiveRoom(r);
@@ -111,7 +112,7 @@ export default function Messages() {
   if (!user) {
     return (
       <div className="max-w-lg mx-auto px-5 py-20 text-center">
-        <div className="text-5xl mb-4">💬</div>
+        <div className="flex justify-center mb-4"><MessageCircle size={48} className="text-solar-dim opacity-40"/></div>
         <h1 className="font-heading text-xl font-bold mb-3">Sign in to view messages</h1>
         <div className="flex gap-3 justify-center">
           <button onClick={() => dispatch({ type:'OPEN_AUTH', payload:'login' })} className="btn-primary">Log In</button>
@@ -144,7 +145,7 @@ export default function Messages() {
   const getOtherParty = (room) => {
     if (!room) return 'Loading...';
     if (room.type === 'ai_support') return 'SolarBot Assistant';
-    if (room.type === 'human_support') return room.agent ? `${room.agent.firstName} (Support)` : 'SolarHub Support';
+    if (room.type === 'human_support') return room.agent ? `${room.agent.firstName} (Support)` : 'Solar Maket Support';
     
     // BUYER_SELLER logic
     if (room.userId === user.id && room.agent) {
@@ -157,27 +158,28 @@ export default function Messages() {
   };
 
   const getOtherPartyAvatar = (room) => {
-    if (!room) return '👤';
-    if (room.type === 'ai_support') return '🤖';
-    if (room.type === 'human_support') return '🎧';
-    
+    if (!room) return <User size={18}/>;
+    if (room.type === 'ai_support') return <Bot size={18}/>;
+    if (room.type === 'human_support') return <Headphones size={18}/>;
+
     let u = room.userId === user.id ? room.agent : room.user;
     if (u?.avatar) return <img src={u.avatar} alt="avatar" className="w-full h-full object-cover" />;
     if (u?.firstName) return u.firstName[0].toUpperCase();
-    return '👤';
+    return <User size={18}/>;
   };
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-8">
+      <SEO title="Messages" noindex />
       <div className="flex items-center gap-3 mb-6">
         <h1 className="font-heading text-2xl font-bold">Inbox</h1>
         {!socketConnected && <span className="text-[10px] text-solar-dim px-2 border border-solar-border rounded-full animate-pulse">Connecting...</span>}
       </div>
 
-      <div className="border border-solar-border bg-solar-card rounded-2xl overflow-hidden shadow-2xl flex h-[600px]">
-        
-        {/* ROOMS LIST (LEFT) */}
-        <div className="w-1/3 min-w-[280px] max-w-[360px] border-r border-solar-border flex flex-col bg-solar-surface">
+      <div className="border border-solar-border bg-solar-card rounded-2xl overflow-hidden shadow-2xl flex h-[calc(100vh-200px)] md:h-[600px]">
+
+        {/* ROOMS LIST (LEFT) — hidden on mobile when a room is open */}
+        <div className={`${activeRoomId ? 'hidden md:flex' : 'flex'} w-full md:w-1/3 md:min-w-[280px] md:max-w-[360px] border-r border-solar-border flex-col bg-solar-surface`}>
           <div className="p-4 border-b border-solar-border">
             <input type="text" placeholder="Search conversations..." className="solar-input" />
           </div>
@@ -186,7 +188,7 @@ export default function Messages() {
               <div className="p-4 text-center text-sm text-solar-dim">Loading conversations...</div>
             ) : rooms.length === 0 ? (
               <div className="p-8 text-center">
-                <div className="text-3xl mb-2">📭</div>
+                <div className="flex justify-center mb-2"><Inbox size={32} className="text-solar-dim opacity-40"/></div>
                 <div className="text-sm font-medium text-solar-muted">No messages yet</div>
                 <div className="text-xs text-solar-dim mt-1">Start chatting with sellers to see conversations here.</div>
               </div>
@@ -219,13 +221,18 @@ export default function Messages() {
           </div>
         </div>
 
-        {/* CHAT AREA (RIGHT) */}
-        <div className="flex-1 flex flex-col bg-solar-card relative">
+        {/* CHAT AREA (RIGHT) — hidden on mobile when no room is selected */}
+        <div className={`${activeRoomId ? 'flex' : 'hidden md:flex'} flex-1 flex-col bg-solar-card relative`}>
           {activeRoomId ? (
             <>
               {/* Header */}
-              <div className="h-[68px] px-6 border-b border-solar-border flex items-center justify-between bg-solar-surface/50">
+              <div className="h-[68px] px-4 border-b border-solar-border flex items-center justify-between bg-solar-surface/50">
                 <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => { setActiveRoomId(null); navigate('/messages', { replace: true }); }}
+                    className="md:hidden text-solar-muted hover:text-solar-text text-sm font-medium flex items-center gap-1 mr-1">
+                    ← Back
+                  </button>
                   <div className="w-10 h-10 rounded-full bg-solar-card2 border border-solar-border flex items-center justify-center font-bold">
                     {getOtherPartyAvatar(activeRoom)}
                   </div>
@@ -299,7 +306,7 @@ export default function Messages() {
           ) : (
             // No room selected empty state
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-              <div className="w-16 h-16 rounded-full bg-solar-surface border border-solar-border flex items-center justify-center text-2xl mb-4">💬</div>
+              <div className="w-16 h-16 rounded-full bg-solar-surface border border-solar-border flex items-center justify-center mb-4"><MessageCircle size={24} className="text-solar-accent opacity-60"/></div>
               <h3 className="font-heading font-semibold text-lg">Your Messages</h3>
               <p className="text-sm text-solar-dim max-w-sm mt-2">Select a conversation from the left to view messages or reply.</p>
             </div>

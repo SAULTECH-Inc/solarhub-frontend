@@ -1,8 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { engineersService } from '../services/index';
 import MediaUploader from '../components/MediaUploader';
+import SocialLinksEditor from '../components/SocialLinksEditor';
+import { User, IdCard, MapPin, Zap, CheckCircle, Lock, Check } from 'lucide-react';
 
 const SPECIALIZATIONS = [
   'Solar Panel Installation', 'Battery Systems', 'Inverter Setup',
@@ -18,11 +20,11 @@ const STATES = [
 ];
 
 const STEPS = [
-  { num: 1, icon: '👤', label: 'Personal Info' },
-  { num: 2, icon: '🪪', label: 'Identity / KYC' },
-  { num: 3, icon: '📍', label: 'Location' },
-  { num: 4, icon: '⚡', label: 'Professional' },
-  { num: 5, icon: '🎉', label: 'Done' },
+  { num: 1, icon: <User size={16}/>, label: 'Personal Info' },
+  { num: 2, icon: <IdCard size={16}/>, label: 'Identity / KYC' },
+  { num: 3, icon: <MapPin size={16}/>, label: 'Location' },
+  { num: 4, icon: <Zap size={16}/>, label: 'Professional' },
+  { num: 5, icon: <CheckCircle size={16}/>, label: 'Done' },
 ];
 
 function F({ label, req, children, hint }) {
@@ -40,9 +42,11 @@ function F({ label, req, children, hint }) {
 export default function BecomeEngineer() {
   const navigate   = useNavigate();
   const { user, dispatch, toast } = useApp();
-  const [step, setStep]     = useState(1);
-  const [saving, setSaving] = useState(false);
+  const [step, setStep]         = useState(1);
+  const [saving, setSaving]     = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [isUpdate, setIsUpdate] = useState(false); // true when profile already exists
+  const [profileLoading, setProfileLoading] = useState(true);
 
   // Form state
   const [form, setForm] = useState({
@@ -64,7 +68,42 @@ export default function BecomeEngineer() {
     specializations: [],
     certifications: [],
     availableForHire: true,
+    socialLinks: {},
   });
+
+  // On mount: check if the user already has an engineer profile and pre-fill if so
+  useEffect(() => {
+    if (!user) { setProfileLoading(false); return; }
+    engineersService.getMyProfile()
+      .then(res => {
+        const p = res?.data ?? res;
+        if (!p?.id) return;
+        setIsUpdate(true);
+        setForm({
+          fullName:          p.fullName          || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+          phone:             p.phone             || user.phone || '',
+          bio:               p.bio               || '',
+          profilePhoto:      p.profilePhoto      || '',
+          nin:               p.nin               || '',
+          ninData:           null,
+          govtIdType:        p.govtIdType        || 'NIN',
+          govtIdUrl:         p.govtIdUrl         || '',
+          address:           p.address           || '',
+          city:              p.city              || '',
+          state:             p.state             || '',
+          latitude:          p.latitude          != null ? String(p.latitude)  : '',
+          longitude:         p.longitude         != null ? String(p.longitude) : '',
+          serviceRadiusKm:   p.serviceRadiusKm   ?? 50,
+          yearsOfExperience: p.yearsOfExperience ?? 0,
+          specializations:   p.specializations   || [],
+          certifications:    p.certifications    || [],
+          availableForHire:  p.availableForHire  ?? true,
+          socialLinks:       p.socialLinks       || {},
+        });
+      })
+      .catch(() => { /* no profile yet — create mode stays */ })
+      .finally(() => setProfileLoading(false));
+  }, [user]);
 
   // Certifications builder
   const [certInput, setCertInput] = useState({ name: '', issuer: '', year: '', url: '' });
@@ -88,16 +127,25 @@ export default function BecomeEngineer() {
   }
 
   function getGPS() {
-    if (!navigator.geolocation) return toast('Geolocation not supported', 'err');
+    if (!navigator.geolocation) return toast('Geolocation is not supported by your browser', 'err');
     setGpsLoading(true);
     navigator.geolocation.getCurrentPosition(
       pos => {
-        update('latitude', pos.coords.latitude.toFixed(7));
+        update('latitude',  pos.coords.latitude.toFixed(7));
         update('longitude', pos.coords.longitude.toFixed(7));
         setGpsLoading(false);
-        toast('📍 Location captured!', 'ok');
+        toast('Location captured!', 'ok');
       },
-      () => { setGpsLoading(false); toast('Could not get location', 'err'); },
+      err => {
+        setGpsLoading(false);
+        const msg = {
+          1: 'Location access denied — please allow it in your browser settings, then try again.',
+          2: 'Location unavailable — please enter your coordinates manually.',
+          3: 'Location request timed out — please try again or enter manually.',
+        }[err.code] || 'Could not get location. Please enter coordinates manually.';
+        toast(msg, 'err');
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
     );
   }
 
@@ -119,18 +167,25 @@ export default function BecomeEngineer() {
 
   async function submit() {
     setSaving(true);
+    const payload = {
+      ...form,
+      latitude:          form.latitude  ? +form.latitude  : undefined,
+      longitude:         form.longitude ? +form.longitude : undefined,
+      yearsOfExperience: +form.yearsOfExperience,
+      serviceRadiusKm:   +form.serviceRadiusKm,
+    };
     try {
-      await engineersService.create({
-        ...form,
-        latitude:  form.latitude  ? +form.latitude  : undefined,
-        longitude: form.longitude ? +form.longitude : undefined,
-        yearsOfExperience: +form.yearsOfExperience,
-        serviceRadiusKm:   +form.serviceRadiusKm,
-      });
-      setStep(5);
-      toast('Engineer profile created! 🎉', 'ok');
+      if (isUpdate) {
+        await engineersService.update(payload);
+        setStep(5);
+        toast('Engineer profile updated!', 'ok');
+      } else {
+        await engineersService.create(payload);
+        setStep(5);
+        toast('Engineer profile created!', 'ok');
+      }
     } catch (e) {
-      toast(e.response?.data?.message || e.message || 'Could not create profile', 'err');
+      toast(e.response?.data?.message || e.message || 'Could not save profile', 'err');
     } finally {
       setSaving(false);
     }
@@ -139,9 +194,9 @@ export default function BecomeEngineer() {
   if (!user) {
     return (
       <div className="max-w-lg mx-auto px-5 py-20 text-center">
-        <div className="text-5xl mb-4">⚡</div>
+        <div className="flex justify-center mb-4"><Zap size={56} className="text-solar-accent opacity-70"/></div>
         <h1 className="font-heading text-2xl font-bold mb-3">Become a Solar Engineer</h1>
-        <p className="text-solar-muted text-sm mb-6">Create an account or sign in to register as an engineer on SolarHub.</p>
+        <p className="text-solar-muted text-sm mb-6">Create an account or sign in to register as an engineer on Solar Maket.</p>
         <div className="flex gap-3 justify-center">
           <button onClick={() => dispatch({ type: 'OPEN_AUTH', payload: 'signup' })} className="btn-primary">Create Account</button>
           <button onClick={() => dispatch({ type: 'OPEN_AUTH', payload: 'login' })}  className="btn-outline">Log In</button>
@@ -150,13 +205,29 @@ export default function BecomeEngineer() {
     );
   }
 
+  if (profileLoading) {
+    return (
+      <div className="max-w-[700px] mx-auto px-5 py-20 text-center">
+        <div className="w-8 h-8 border-2 border-solar-border border-t-solar-accent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-solar-dim text-sm">Loading profile…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-[700px] mx-auto px-5 py-10">
       <div className="mb-8">
         <h1 className="font-heading text-2xl font-bold">
-          Become a <span className="text-solar-accent">Solar Engineer</span>
+          {isUpdate ? 'Update Your ' : 'Become a '}<span className="text-solar-accent">Solar Engineer</span>{isUpdate ? ' Profile' : ''}
         </h1>
-        <p className="text-solar-muted text-sm mt-1">Join Nigeria's growing network of certified solar professionals</p>
+        <p className="text-solar-muted text-sm mt-1">
+          {isUpdate ? 'Edit your profile details — changes go live immediately.' : "Join Nigeria's growing network of certified solar professionals"}
+        </p>
+        {isUpdate && (
+          <div className="mt-3 inline-flex items-center gap-2 text-xs text-solar-green bg-solar-green/10 border border-solar-green/25 rounded-xl px-3 py-2">
+            ✓ You already have an engineer profile — editing it below
+          </div>
+        )}
       </div>
 
       {/* Step progress */}
@@ -165,7 +236,7 @@ export default function BecomeEngineer() {
           <div key={s.num} className="flex-1 flex flex-col items-center">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mb-1.5 transition-all
               ${step > s.num ? 'bg-solar-green text-black' : step === s.num ? 'bg-solar-accent text-black' : 'bg-solar-surface text-solar-dim border border-solar-border'}`}>
-              {step > s.num ? '✓' : s.icon}
+              {step > s.num ? <Check size={14}/> : s.icon}
             </div>
             <div className={`text-[10px] text-center hidden sm:block ${step === s.num ? 'text-solar-accent font-medium' : 'text-solar-dim'}`}>
               {s.label}
@@ -181,7 +252,7 @@ export default function BecomeEngineer() {
       {step === 1 && (
         <div className="section-card p-6 space-y-5 animate-slide-up">
           <h2 className="font-heading text-sm font-semibold text-solar-accent uppercase tracking-widest">Personal Information</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <F label="Full Legal Name" req>
               <input className="solar-input col-span-2" placeholder="e.g. Emeka Okonkwo"
                 value={form.fullName} onChange={e => update('fullName', e.target.value)} />
@@ -204,6 +275,8 @@ export default function BecomeEngineer() {
               placeholder="I am a certified solar engineer with 8 years of experience specialising in hybrid off-grid systems across Lagos and the South-West…"
               value={form.bio} onChange={e => update('bio', e.target.value)} />
           </F>
+
+          <SocialLinksEditor value={form.socialLinks} onChange={v => update('socialLinks', v)} />
         </div>
       )}
 
@@ -212,10 +285,10 @@ export default function BecomeEngineer() {
         <div className="section-card p-6 space-y-5 animate-slide-up">
           <h2 className="font-heading text-sm font-semibold text-solar-accent uppercase tracking-widest">Identity Verification (KYC)</h2>
           <div className="bg-solar-accent/5 border border-solar-accent/20 rounded-xl p-4 text-xs text-solar-muted flex gap-2">
-            <span className="text-solar-accent">🔒</span>
-            Your NIN and ID details are stored securely and only accessible to SolarHub administrators for verification purposes. They are never shared publicly.
+            <Lock size={14} className="text-solar-accent flex-shrink-0"/>
+            Your NIN and ID details are stored securely and only accessible to Solar Maket administrators for verification purposes. They are never shared publicly.
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <F label="ID Type" req>
               <select className="solar-input" value={form.govtIdType} onChange={e => update('govtIdType', e.target.value)}>
                 <option value="NIN">NIN (National ID Number)</option>
@@ -229,10 +302,21 @@ export default function BecomeEngineer() {
               <input className="solar-input font-mono" placeholder="12345678901"
                 value={form.nin} onChange={e => update('nin', e.target.value)} />
             </F>
-            <F label="ID Document Photo URL" hint="Optional — upload scan and paste URL here" >
-              <input className="solar-input col-span-2" placeholder="https://… (optional)"
-                value={form.govtIdUrl} onChange={e => update('govtIdUrl', e.target.value)} />
-            </F>
+            <div className="col-span-2">
+              <label className="text-xs font-medium text-solar-muted block mb-1.5">
+                ID Document Photo <span className="text-solar-dim">(optional)</span>
+              </label>
+              <MediaUploader
+                value={form.govtIdUrl ? [{ url: form.govtIdUrl, resourceType: 'image' }] : []}
+                onChange={v => update('govtIdUrl', v[0]?.url || '')}
+                folder="kyc"
+                maxFiles={1}
+                label="Upload ID scan / photo"
+              />
+              <p className="text-[10px] text-solar-dim mt-1.5">
+                Passport data page, driver's licence, voter card, etc. Stored securely — never shown publicly.
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -241,7 +325,7 @@ export default function BecomeEngineer() {
       {step === 3 && (
         <div className="section-card p-6 space-y-5 animate-slide-up">
           <h2 className="font-heading text-sm font-semibold text-solar-accent uppercase tracking-widest">Location & Service Area</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <F label="Street Address" req>
               <input className="solar-input col-span-2" placeholder="12 Solar Street, Victoria Island"
                 value={form.address} onChange={e => update('address', e.target.value)} />
@@ -264,11 +348,11 @@ export default function BecomeEngineer() {
               <span className="font-heading text-xs font-semibold text-solar-muted uppercase tracking-widest">GPS Coordinates</span>
               <button onClick={getGPS} disabled={gpsLoading}
                 className="text-xs text-solar-accent border border-solar-accent/30 rounded-lg px-3 py-1.5 hover:bg-solar-accent/10 transition-all disabled:opacity-50 flex items-center gap-1.5">
-                {gpsLoading ? <span className="w-3 h-3 border border-solar-accent/40 border-t-solar-accent rounded-full animate-spin" /> : '📍'}
+                {gpsLoading ? <span className="w-3 h-3 border border-solar-accent/40 border-t-solar-accent rounded-full animate-spin" /> : <MapPin size={13}/>}
                 {gpsLoading ? 'Getting location…' : 'Use My Location'}
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <F label="Latitude">
                 <input className="solar-input font-mono text-sm" placeholder="6.4550575"
                   value={form.latitude} onChange={e => update('latitude', e.target.value)} />
@@ -333,7 +417,7 @@ export default function BecomeEngineer() {
               ))}
             </div>
             <div className="bg-solar-surface border border-solar-border rounded-xl p-4 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input className="solar-input text-sm" placeholder="Certificate Name *"
                   value={certInput.name} onChange={e => setCertInput(x => ({ ...x, name: e.target.value }))} />
                 <input className="solar-input text-sm" placeholder="Issuing Body *"
@@ -359,16 +443,16 @@ export default function BecomeEngineer() {
       {/* ── Step 5: Done ─────────────────────────────────────── */}
       {step === 5 && (
         <div className="section-card p-10 text-center animate-slide-up space-y-4">
-          <div className="text-6xl">🎉</div>
+          <div className="flex justify-center"><CheckCircle size={64} className="text-solar-green"/></div>
           <h2 className="font-heading text-2xl font-bold text-solar-green">You're Live!</h2>
           <p className="text-solar-muted text-sm max-w-sm mx-auto leading-relaxed">
-            Your engineer profile is now visible in the SolarHub marketplace. Clients can find and contact you immediately.
+            Your engineer profile is now visible in the Solar Maket marketplace. Clients can find and contact you immediately.
           </p>
           <div className="bg-solar-accent/5 border border-solar-accent/20 rounded-xl p-4 text-xs text-solar-muted text-left space-y-1.5 max-w-sm mx-auto">
-            <p>✅ Profile is publicly visible</p>
-            <p>📋 SolarHub may periodically review profiles for quality</p>
-            <p>⭐ Build your rating by completing jobs and earning reviews</p>
-            <p>🔒 Your NIN/ID is securely stored and private</p>
+            <p>Profile is publicly visible</p>
+            <p>Solar Maket may periodically review profiles for quality</p>
+            <p>Build your rating by completing jobs and earning reviews</p>
+            <p>Your NIN/ID is securely stored and private</p>
           </div>
           <div className="flex gap-3 justify-center pt-2">
             <button onClick={() => navigate('/engineers')} className="btn-primary">Browse Engineers →</button>
@@ -387,7 +471,11 @@ export default function BecomeEngineer() {
           <button onClick={next} disabled={saving}
             className="btn-primary px-8 flex items-center gap-2">
             {saving && <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />}
-            {step === 4 ? (saving ? 'Submitting…' : '✓ Create Profile') : 'Next →'}
+            {step === 4
+            ? saving
+              ? 'Saving…'
+              : isUpdate ? '✓ Update Profile' : '✓ Create Profile'
+            : 'Next →'}
           </button>
         </div>
       )}

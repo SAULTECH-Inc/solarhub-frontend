@@ -19,6 +19,7 @@ yarn-error.log*
 *.tsbuildinfo
 *.bak
 *.tmp
-package-lock.json
 yarn.lock
 *.swp
+android/keystore/
+.vercel

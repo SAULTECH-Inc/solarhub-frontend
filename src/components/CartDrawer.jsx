@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { ShoppingCart, X, Zap } from 'lucide-react';
 
 const fp = n => '₦' + Number(n).toLocaleString();
 
@@ -17,18 +18,20 @@ export default function CartDrawer() {
             <h2 className="font-heading font-semibold text-base">Shopping Cart</h2>
             <p className="text-xs text-solar-muted mt-0.5">{items.length} item{items.length!==1?'s':''}</p>
           </div>
-          <button onClick={()=>dispatch({type:'SET_CART_OPEN',payload:false})} className="text-solar-muted hover:text-solar-text bg-solar-surface rounded-lg w-8 h-8 flex items-center justify-center text-lg">✕</button>
+          <button onClick={()=>dispatch({type:'SET_CART_OPEN',payload:false})} className="text-solar-muted hover:text-solar-text bg-solar-surface rounded-lg w-8 h-8 flex items-center justify-center"><X size={16}/></button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {!items.length ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-solar-dim">
-              <span className="text-5xl">🛒</span>
+              <ShoppingCart size={48} className="opacity-30" />
               <div className="font-heading text-sm">Your cart is empty</div>
               <button onClick={()=>{dispatch({type:'SET_CART_OPEN',payload:false});nav('/marketplace');}} className="btn-outline text-xs">Browse Products</button>
             </div>
           ) : items.map(({product:p, quantity:qty, id:itemId}) => p && (
             <div key={itemId||p.id} className="flex gap-3 bg-solar-surface border border-solar-border rounded-xl p-3">
-              <div className="w-14 h-14 bg-solar-card2 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">{p.icon||'⚡'}</div>
+              <div className="w-14 h-14 bg-solar-card2 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                {p.thumbnail||p.images?.[0] ? <img src={p.thumbnail||p.images[0]} alt={p.name} className="w-full h-full object-cover"/> : <Zap size={24} className="text-solar-accent opacity-60"/>}
+              </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-solar-text line-clamp-2 leading-snug">{p.name}</p>
                 <p className="font-heading text-solar-accent text-sm font-semibold mt-1">{fp(p.price)}</p>

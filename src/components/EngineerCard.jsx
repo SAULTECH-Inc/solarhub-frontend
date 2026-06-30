@@ -37,7 +37,7 @@ export default function EngineerCard({ engineer, onClick }) {
           ) : (
             <div className="w-14 h-14 rounded-full bg-gradient-to-br from-solar-accent to-solar-orange
                             flex items-center justify-center text-xl font-bold text-black border-2 border-solar-border">
-              {displayName[0]?.toUpperCase() || '⚡'}
+              {displayName[0]?.toUpperCase() || '?'}
             </div>
           )}
           {availableForHire && (
@@ -49,10 +49,10 @@ export default function EngineerCard({ engineer, onClick }) {
           <div className="flex items-center gap-1.5 flex-wrap">
             <h3 className="font-heading font-semibold text-sm text-solar-text truncate">{displayName}</h3>
             {isVerified && (
-              <span title="Verified by SolarHub" className="text-solar-accent text-xs">✓</span>
+              <span title="Verified by Solar Maket" className="text-solar-accent text-xs">✓</span>
             )}
           </div>
-          <p className="text-xs text-solar-muted mt-0.5">📍 {city}, {state}</p>
+          <p className="text-xs text-solar-muted mt-0.5">{city}, {state}</p>
           <div className="flex items-center gap-1.5 mt-1">
             <span className="text-solar-accent text-xs tracking-tight">{STARS(averageRating)}</span>
             <span className="text-xs text-solar-dim">({reviewCount})</span>

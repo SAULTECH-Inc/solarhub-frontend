@@ -1,7 +1,23 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import SEO from '../components/SEO';
 import { paymentsService } from '../services/commerce.service';
+import { Lock, Shield, Zap, CreditCard, Banknote } from 'lucide-react';
+
+function loadFlutterwaveScript() {
+  return new Promise((resolve, reject) => {
+    if (window.FlutterwaveCheckout) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://checkout.flutterwave.com/v3.js';
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('Failed to load payment SDK. Check your connection.'));
+    document.head.appendChild(s);
+  });
+}
+
+const FLW_CURRENCIES    = ['NGN', 'GHS', 'KES', 'ZAR', 'UGX', 'TZS', 'XOF', 'RWF'];
+const PADDLE_CURRENCIES = ['USD', 'EUR', 'GBP', 'CAD', 'AUD'];
 
 const fp = n => '₦' + Number(n).toLocaleString();
 const STEPS = ['Delivery', 'Payment', 'Review'];
@@ -27,49 +43,106 @@ export default function Checkout() {
   if (!items.length) { nav('/cart'); return null; }
 
   async function doPlace() {
-    if (!user) { dispatch({type:'OPEN_AUTH',payload:'login'}); return; }
-    if (!form.address||!form.phone||!form.city) { toast('Please fill all required fields','err'); return; }
+    if (!user) { dispatch({ type: 'OPEN_AUTH', payload: 'login' }); return; }
+    if (!form.address || !form.phone || !form.city) { toast('Please fill all required fields', 'err'); return; }
     setSaving(true);
+
+    const dto = {
+      deliveryAddress: {
+        firstName: form.firstName, lastName: form.lastName,
+        phone: form.phone, address: form.address,
+        city: form.city, state: form.state, country: 'Nigeria',
+      },
+      deliveryMethod: form.deliveryMethod, deliveryFee,
+      currency: form.currency, paymentMethod: form.payment,
+    };
+
     try {
-      const dto = {
-        deliveryAddress:{ firstName:form.firstName, lastName:form.lastName,
-          phone:form.phone, address:form.address, city:form.city, state:form.state, country:'Nigeria' },
-        deliveryMethod:form.deliveryMethod, deliveryFee, currency:form.currency,
-        paymentMethod: form.payment
-      };
       const result = await placeOrder(dto);
-      if (!result.success) return;
+      if (!result.success) { setSaving(false); return; }
       const orderId = result.order?.id;
-      
-      // If payment is purely Cash on Delivery, skip online gateway and mark success
+
       if (form.payment === 'cash') {
-        toast('Order placed successfully via Payment on Delivery', 'ok');
-        nav('/orders');
+        toast('Order placed! Pay on delivery.', 'ok');
+        nav(`/orders${orderId ? '/' + orderId : ''}`);
+        setSaving(false);
         return;
       }
-      
-      // Attempt online payment routing
-      if (orderId && form.payment === 'online') {
-        try {
-          const payRes = await paymentsService.initiate(orderId, form.currency, 'card');
-          const pd = payRes?.data ?? payRes;
-          if (pd?.paymentUrl) { window.location.href = pd.paymentUrl; return; }
-          if (pd?.clientSecret) { window.location.href = `/orders?payment_intent=${pd.clientSecret}`; return; }
-          throw new Error('Payment gateway did not return a valid checkout URL.');
-        } catch(e) { 
-          toast('Order placed but online payment failed to load. Please try paying from the Orders page.', 'err');
-          console.warn('Payment init failed:', e);
-          return; // Stop navigation so user can see error toast and explicitly click /orders on their own or retry
+
+      const customerName = `${form.firstName} ${form.lastName}`.trim();
+
+      if (FLW_CURRENCIES.includes(form.currency)) {
+        // ── Flutterwave inline popup (Africa) ─────────────────
+        const pk = import.meta.env.VITE_FLW_PUBLIC_KEY;
+        if (!pk || pk.startsWith('FLWPUBK_TEST_xxx')) {
+          toast('Payment gateway not configured. Contact support.', 'err');
+          setSaving(false);
+          return;
         }
+
+        // Get reference from backend (creates payment record)
+        const initRes = await paymentsService.initiate(orderId, form.currency, 'card', customerName);
+        const { reference } = initRes.data;
+
+        await loadFlutterwaveScript();
+        window.FlutterwaveCheckout({
+          public_key: pk,
+          tx_ref: reference,
+          amount: finalTotal,
+          currency: form.currency,
+          payment_options: 'card,banktransfer,ussd,mobilemoney',
+          redirect_url: `${window.location.origin}/orders/${orderId}`,
+          customer: {
+            email: form.email || user.email,
+            name: customerName,
+            phonenumber: form.phone,
+          },
+          customizations: { title: 'Solar Maket', description: `Order #${orderId?.slice(0,8)}` },
+          callback: async (resp) => {
+            if (resp.status === 'successful' || resp.status === 'completed') {
+              try {
+                await paymentsService.verifyFlutterwave(resp.transaction_id, resp.tx_ref);
+                dispatch({ type: 'CLEAR_CART' });
+                toast('Payment confirmed! Order is being processed.', 'ok');
+              } catch {
+                toast('Payment received — verification pending. We will confirm shortly.', 'ok');
+              }
+            } else {
+              toast('Payment was not completed. Try again anytime from My Orders.', 'err');
+            }
+            setSaving(false);
+            nav(`/orders${orderId ? '/' + orderId : ''}`);
+          },
+          onclose: () => {
+            setSaving(false);
+            toast('Payment cancelled. Complete payment from My Orders anytime.', 'err');
+            nav(`/orders${orderId ? '/' + orderId : ''}`);
+          },
+        });
+        // setSaving stays true while popup is open — prevents double-click
+
+      } else if (PADDLE_CURRENCIES.includes(form.currency)) {
+        // ── Paddle redirect checkout (international) ──────────
+        const initRes = await paymentsService.initiate(orderId, form.currency, 'card', customerName);
+        const { paymentUrl } = initRes.data;
+        if (!paymentUrl) throw new Error('Failed to create payment session. Please try again.');
+        // Redirect to Paddle hosted checkout; user returns to /orders/:id after payment
+        window.location.href = paymentUrl;
+        // Don't setSaving(false) — page is navigating away
+
+      } else {
+        toast(`Currency ${form.currency} is not supported for online payment.`, 'err');
+        setSaving(false);
       }
-      
-      nav('/orders');
-    } catch(e) { toast(e.message,'err'); }
-    finally { setSaving(false); }
+    } catch (e) {
+      toast(e.message || 'Something went wrong. Please try again.', 'err');
+      setSaving(false);
+    }
   }
 
   return (
     <div className="max-w-[1100px] mx-auto px-5 py-10">
+      <SEO title="Checkout" noindex />
       <h1 className="font-heading text-2xl font-bold mb-8">Checkout</h1>
       <div className="flex items-center mb-10 max-w-sm">
         {STEPS.map((s,i) => (
@@ -85,7 +158,7 @@ export default function Checkout() {
           {step===0&&(
             <div className="section-card p-6 animate-slide-up">
               <h2 className="font-heading text-base font-semibold mb-5">Delivery Information</h2>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[['firstName','First Name',true],['lastName','Last Name',false],['phone','Phone Number',true,'tel'],['email','Email',false,'email']].map(([k,l,r,t])=>(
                   <div key={k} className="fld"><label className="text-xs text-solar-muted mb-1 block">{l}{r&&<span className="text-solar-accent ml-1">*</span>}</label>
                   <input className="solar-input" type={t||'text'} value={form[k]} onChange={e=>set(k,e.target.value)} placeholder={l}/></div>
@@ -97,9 +170,12 @@ export default function Checkout() {
                 <div className="fld"><label className="text-xs text-solar-muted mb-1 block">Currency</label>
                   <select className="solar-input" value={form.currency} onChange={e=>set('currency',e.target.value)}>
                     <option value="NGN">₦ NGN — Nigerian Naira</option>
-                    <option value="USD">$ USD — US Dollar</option>
-                    <option value="CNY">¥ CNY — Chinese Yuan</option>
                     <option value="GHS">GH₵ GHS — Ghanaian Cedi</option>
+                    <option value="USD">$ USD — US Dollar</option>
+                    <option value="EUR">€ EUR — Euro</option>
+                    <option value="GBP">£ GBP — British Pound</option>
+                    <option value="CAD">$ CAD — Canadian Dollar</option>
+                    <option value="AUD">$ AUD — Australian Dollar</option>
                   </select></div>
               </div>
               <h3 className="font-heading text-sm font-semibold mt-6 mb-3">Delivery Method</h3>
@@ -120,18 +196,18 @@ export default function Checkout() {
               <h2 className="font-heading text-base font-semibold mb-5">Payment Method</h2>
               <div className="space-y-3 mb-4">
                 {[
-                  {val:'online',label:'Pay Online (Card, Transfer, USSD)',ico:'💳',sub:'Securely processed by Paystack/Stripe'},
-                  {val:'cash',label:'Payment on Delivery',ico:'💵',sub:'Pay when your items arrive'}
+                  {val:'online',label:'Pay Online',ico:<CreditCard size={20} className="text-solar-accent"/>,sub: FLW_CURRENCIES.includes(form.currency) ? 'Flutterwave — Card, Bank Transfer, USSD, Mobile Money' : 'Paddle — Card & international payment methods'},
+                  {val:'cash',label:'Payment on Delivery',ico:<Banknote size={20} className="text-solar-accent"/>,sub:'Pay when your items arrive'}
                 ].map(m=>(
                   <label key={m.val} className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${form.payment===m.val?'border-solar-accent bg-solar-accent/5':'border-solar-border hover:border-solar-border2'}`}>
                     <input type="radio" name="pay" value={m.val} checked={form.payment===m.val} onChange={e=>set('payment',e.target.value)} className="accent-solar-accent"/>
-                    <span className="text-xl">{m.ico}</span>
+                    <span className="flex items-center">{m.ico}</span>
                     <div className="flex-1"><div className="text-sm font-medium">{m.label}</div><div className="text-xs text-solar-muted">{m.sub}</div></div>
                   </label>
                 ))}
               </div>
-              {form.currency==='CNY'&&<div className="p-3 bg-solar-blue/10 border border-solar-blue/25 rounded-xl text-xs text-solar-muted">ℹ️ CNY payments are processed via Stripe.</div>}
-              {['USD','GHS'].includes(form.currency)&&<div className="p-3 bg-solar-accent/10 border border-solar-accent/25 rounded-xl text-xs text-solar-muted">ℹ️ {form.currency} payments are processed via Paystack.</div>}
+              {FLW_CURRENCIES.includes(form.currency)&&<div className="p-3 bg-solar-accent/10 border border-solar-accent/25 rounded-xl text-xs text-solar-muted">{form.currency} payments are processed via Flutterwave.</div>}
+              {PADDLE_CURRENCIES.includes(form.currency)&&<div className="p-3 bg-solar-blue/10 border border-solar-blue/25 rounded-xl text-xs text-solar-muted">{form.currency} payments are processed via Paddle. You will be redirected to complete checkout.</div>}
               <div className="flex gap-3 mt-6">
                 <button onClick={()=>setStep(0)} className="btn-ghost flex-shrink-0">← Back</button>
                 <button onClick={()=>setStep(2)} className="btn-primary flex-1 py-3">Review Order →</button>
@@ -144,7 +220,10 @@ export default function Checkout() {
               <div className="space-y-3 mb-5">
                 {items.map(({product:p,quantity:qty})=>(
                   <div key={p?.id} className="flex gap-3 items-center">
-                    <span className="text-2xl">{p?.icon||'⚡'}</span>
+                    {p?.thumbnail
+                      ? <img src={p.thumbnail} alt="" className="w-10 h-10 rounded-lg object-cover border border-solar-border flex-shrink-0"/>
+                      : <span className="w-10 h-10 rounded-lg bg-solar-surface border border-solar-border flex items-center justify-center flex-shrink-0"><Zap size={16} className="text-solar-accent opacity-60"/></span>
+                    }
                     <div className="flex-1 min-w-0"><div className="text-sm font-medium line-clamp-1">{p?.name}</div><div className="text-xs text-solar-muted">Qty: {qty}</div></div>
                     <span className="font-heading text-solar-accent text-sm">{fp(Number(p?.price||0)*qty)}</span>
                   </div>
@@ -167,7 +246,7 @@ export default function Checkout() {
                   {saving?<span className="flex items-center gap-2 justify-center"><span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"/>Processing…</span>:`✓ Place Order · ${fp(finalTotal)}`}
                 </button>
               </div>
-              <p className="text-xs text-solar-dim mt-3 text-center">🔒 Payments secured by Paystack / Stripe</p>
+              <p className="text-xs text-solar-dim mt-3 text-center inline-flex items-center gap-1 w-full justify-center"><Lock size={11}/>Payments secured by {FLW_CURRENCIES.includes(form.currency) ? 'Flutterwave' : 'Paddle'}</p>
             </div>
           )}
         </div>
@@ -185,7 +264,7 @@ export default function Checkout() {
             <hr className="border-solar-border my-2"/>
             <div className="flex justify-between font-semibold text-base"><span>Total</span><span className="font-heading text-solar-accent text-lg">{fp(finalTotal)}</span></div>
           </div>
-          <div className="bg-solar-green/10 border border-solar-green/25 rounded-lg p-3 text-xs text-solar-green">🛡️ SolarHub Buyer Guarantee</div>
+          <div className="bg-solar-green/10 border border-solar-green/25 rounded-lg p-3 text-xs text-solar-green flex items-center gap-1.5"><Shield size={13}/>Solar Maket Buyer Guarantee</div>
         </div>
       </div>
     </div>

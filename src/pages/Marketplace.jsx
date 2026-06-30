@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { productsService } from '../services/products.service';
 import ProductCard from '../components/ProductCard';
+import SEO, { itemListSchema } from '../components/SEO';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
 
 const PRICE_RANGES = [
   { label:'All Prices', val:'' }, { label:'Under ₦100k', val:'0-100000' },
@@ -9,9 +11,9 @@ const PRICE_RANGES = [
   { label:'Above ₦600k', val:'600000-9999999' },
 ];
 const CATS = [
-  { key:'solar-panels', label:'☀️ Solar Panels' }, { key:'batteries', label:'🔋 Batteries' },
-  { key:'inverters', label:'⚡ Inverters' }, { key:'charge-controllers', label:'🔌 Controllers' },
-  { key:'solar-lights', label:'💡 Solar Lights' }, { key:'accessories', label:'🔧 Accessories' },
+  { key:'solar-panels', label:'Solar Panels' }, { key:'batteries', label:'Batteries' },
+  { key:'inverters', label:'Inverters' }, { key:'charge-controllers', label:'Controllers' },
+  { key:'solar-lights', label:'Solar Lights' }, { key:'accessories', label:'Accessories' },
 ];
 const LOCS = ['Lagos','Abuja','Port Harcourt','Enugu','Ibadan','Other'];
 
@@ -88,18 +90,37 @@ export default function Marketplace() {
     </div>
   );
 
+  const activeCat = CATS.find(c => cats.includes(c.key));
+  const seoTitle = activeCat
+    ? `Buy ${activeCat.label.replace(/^\S+\s/,'')} in Nigeria`
+    : 'Solar Products Marketplace Nigeria';
+  const seoDesc = activeCat
+    ? `Shop ${activeCat.label.replace(/^\S+\s/,'')} from verified Nigerian sellers. Compare prices, specs and warranty. Fast delivery across Nigeria.`
+    : `Shop ${meta.total || '1,200'}+ solar products: panels, batteries, inverters, charge controllers. Compare prices from verified Nigerian sellers.`;
+
   return (
     <div className="max-w-[1200px] mx-auto px-5 py-10">
+      <SEO
+        title={seoTitle}
+        description={seoDesc}
+        canonical={activeCat ? `/marketplace?cat=${activeCat.key}` : '/marketplace'}
+        breadcrumbs={[
+          { name: 'Home', url: '/' },
+          { name: 'Marketplace', url: '/marketplace' },
+          ...(activeCat ? [{ name: activeCat.label.replace(/^\S+\s/,'') }] : []),
+        ]}
+        jsonLd={products.length ? itemListSchema(products.slice(0, 20), seoTitle) : undefined}
+      />
       <div className="flex gap-3 mb-6 flex-wrap">
         <div className="flex flex-1 min-w-[240px]">
           <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search solar products..." className="solar-input rounded-r-none flex-1"/>
-          <button className="bg-solar-accent text-black px-4 rounded-r-lg text-lg flex-shrink-0">🔍</button>
+          <button className="bg-solar-accent text-black px-4 rounded-r-lg flex items-center justify-center flex-shrink-0"><Search size={18} /></button>
         </div>
         <select value={sort} onChange={e => setSort(e.target.value)} className="solar-input w-auto text-sm px-3">
           <option value="def">Featured</option><option value="pa">Price: Low→High</option>
           <option value="pd">Price: High→Low</option><option value="rat">Highest Rated</option>
         </select>
-        <button onClick={() => setMobile(true)} className="btn-outline text-sm md:hidden">⚙️ Filters</button>
+        <button onClick={() => setMobile(true)} className="btn-outline text-sm md:hidden flex items-center gap-1.5"><SlidersHorizontal size={15} /> Filters</button>
       </div>
       <div className="flex gap-6">
         <aside className="hidden md:block w-52 flex-shrink-0">
@@ -117,7 +138,7 @@ export default function Marketplace() {
           </div>
           {!loading && !products.length ? (
             <div className="text-center py-20 text-solar-dim">
-              <div className="text-5xl mb-4">🔍</div>
+              <Search size={48} className="mx-auto mb-4 opacity-40" />
               <div className="font-heading text-base mb-2">No products found</div>
               <button onClick={clearFilters} className="btn-outline mt-4">Clear Filters</button>
             </div>
@@ -142,7 +163,7 @@ export default function Marketplace() {
           <div className="w-72 bg-solar-card border-l border-solar-border h-full overflow-y-auto p-5 animate-slide-right">
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-heading text-sm font-semibold">Filters</h3>
-              <button onClick={() => setMobile(false)}>✕</button>
+              <button onClick={() => setMobile(false)}><X size={18} className="text-solar-muted" /></button>
             </div>
             {Filters}
           </div>

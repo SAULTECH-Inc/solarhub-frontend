@@ -117,7 +117,7 @@ export default function RequestQuote() {
             {rec && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 font-medium text-sm text-solar-accent mb-2">
-                  <span>{rec.icon}</span> {rec.title}
+                  {rec.title}
                 </div>
                 <div className="text-xs text-solar-muted flex justify-between border-b border-solar-border border-dashed py-1.5">
                   <span>Inverter Output</span><strong className="text-solar-text">{rec.inverter?.capacityKva}kVA</strong>

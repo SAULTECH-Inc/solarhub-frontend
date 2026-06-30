@@ -23,7 +23,7 @@ export default function AuthCallback() {
         const user = res?.data ?? res;
         dispatch({ type: 'SET_USER', payload: user });
         syncCart(); syncFavourites();
-        toast('Welcome, ' + user.firstName + '! 🎉', 'ok');
+        toast('Welcome, ' + user.firstName + '!', 'ok');
         nav('/');
       })
       .catch(() => { tokenStorage.clearTokens(); nav('/'); });

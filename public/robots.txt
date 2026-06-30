@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Private pages — no indexing
+Disallow: /checkout
+Disallow: /cart
+Disallow: /orders
+Disallow: /profile
+Disallow: /messages
+Disallow: /my-projects
+Disallow: /seller/
+Disallow: /auth/
+
+# Sitemap
+Sitemap: https://solarmaket.ng/sitemap.xml

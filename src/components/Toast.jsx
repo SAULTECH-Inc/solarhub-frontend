@@ -1,4 +1,5 @@
 import { useApp } from '../context/AppContext';
+import { CheckCircle, XCircle, Info } from 'lucide-react';
 
 export default function Toast() {
   const { toast } = useApp();
@@ -12,7 +13,7 @@ export default function Toast() {
           ? 'bg-red-500/10 border-red-500/40 text-solar-text'
           : 'bg-solar-card2 border-solar-border2 text-solar-text'
         }`}>
-        <span>{toast.type === 'ok' ? '✅' : toast.type === 'err' ? '❌' : 'ℹ️'}</span>
+        {toast.type === 'ok' ? <CheckCircle size={16} className="text-solar-green flex-shrink-0"/> : toast.type === 'err' ? <XCircle size={16} className="text-red-400 flex-shrink-0"/> : <Info size={16} className="text-solar-accent flex-shrink-0"/>}
         {toast.msg}
       </div>
     </div>

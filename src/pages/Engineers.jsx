@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { engineersService } from '../services/index';
 import EngineerCard from '../components/EngineerCard';
+import SEO from '../components/SEO';
+import { Zap, Wrench } from 'lucide-react';
 
 const SPECIALIZATIONS = [
   'Solar Panel Installation','Battery Systems','Inverter Setup',
@@ -51,10 +53,16 @@ export default function Engineers() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 py-10">
+      <SEO
+        title="Hire Certified Solar Engineers in Nigeria"
+        description={`Find and hire ${total || '300'}+ verified solar installation engineers across all 36 states in Nigeria. Compare profiles, ratings, and get instant quotes.`}
+        canonical="/engineers"
+        breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'Solar Engineers' }]}
+      />
       {/* Hero */}
       <div className="mb-10 text-center">
         <div className="inline-flex items-center gap-2 bg-solar-accent/10 border border-solar-accent/25 rounded-full px-4 py-1.5 mb-4">
-          <span className="text-solar-accent text-sm">⚡</span>
+          <Zap size={14} className="text-solar-accent"/>
           <span className="text-xs font-medium text-solar-accent tracking-wide uppercase">Verified Solar Engineers</span>
         </div>
         <h1 className="font-heading text-3xl md:text-5xl font-bold mb-4">
@@ -65,7 +73,7 @@ export default function Engineers() {
         </p>
         <button onClick={() => navigate('/become-engineer')}
           className="mt-6 btn-outline text-sm gap-2 inline-flex items-center">
-          🔧 Register as an Engineer
+          <Wrench size={15}/> Register as an Engineer
         </button>
       </div>
 
@@ -158,7 +166,7 @@ export default function Engineers() {
             </div>
           ) : engineers.length === 0 ? (
             <div className="text-center py-20 text-solar-dim">
-              <div className="text-5xl mb-4">🔧</div>
+              <div className="flex justify-center mb-4"><Wrench size={48} className="text-solar-dim opacity-40"/></div>
               <p className="font-heading text-lg mb-2">No engineers found</p>
               <p className="text-sm mb-6">Try adjusting your filters</p>
               <button onClick={() => navigate('/become-engineer')} className="btn-primary">

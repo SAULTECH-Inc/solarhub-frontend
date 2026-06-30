@@ -85,7 +85,7 @@ export default function JobBoard() {
                   <span className="text-xs text-solar-dim">{new Date(r.createdAt).toLocaleDateString()}</span>
                 </div>
                 <h3 className="font-heading font-semibold text-sm mb-1">{spec.title || 'Custom System Installation'}</h3>
-                <div className="text-xs text-solar-muted mb-4 flex items-center gap-1.5"><span className="text-sm">📍</span> {r.city}, {r.state}</div>
+                <div className="text-xs text-solar-muted mb-4">{r.city}, {r.state}</div>
                 
                 <div className="bg-solar-card2 rounded-lg p-3 space-y-1.5 mb-4 flex-1">
                   <div className="flex justify-between text-xs"><span className="text-solar-dim">Inverter</span><span className="font-medium text-solar-text">{spec.inverter?.capacityKva}kVA</span></div>
@@ -110,7 +110,7 @@ export default function JobBoard() {
             <div className="p-6 border-b border-solar-border">
               <span className="badge-blue text-[10px] uppercase mb-3 inline-block">{selectedRfq.timeline}</span>
               <h2 className="font-heading text-xl font-bold mb-1">Project Request</h2>
-              <div className="text-sm text-solar-muted">📍 {selectedRfq.city}, {selectedRfq.state}</div>
+              <div className="text-sm text-solar-muted">{selectedRfq.city}, {selectedRfq.state}</div>
             </div>
             <div className="p-6 bg-solar-surface/50 border-b border-solar-border">
               <h3 className="text-xs font-semibold uppercase tracking-widest text-solar-accent mb-3">AI Technical Specs</h3>

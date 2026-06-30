@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { usersService, engineersService } from '../services/index';
 import MediaUploader from '../components/MediaUploader';
+import SEO from '../components/SEO';
+import { User, Store, Zap, CreditCard, Bell, Lock, Mail, Smartphone, CheckCircle } from 'lucide-react';
 
 const STATES = [
   'Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno',
@@ -12,13 +14,21 @@ const STATES = [
 ];
 
 const TABS = [
-  { id: 'profile',       icon: '👤', label: 'My Profile' },
-  { id: 'seller',        icon: '🏪', label: 'Seller Profile' },
-  { id: 'engineer',      icon: '⚡', label: 'Engineer Profile' },
-  { id: 'billing',       icon: '💳', label: 'Billing & Subscriptions' },
-  { id: 'notifications', icon: '🔔', label: 'Notifications' },
-  { id: 'security',      icon: '🔒', label: 'Security' },
+  { id: 'profile',       label: 'My Profile' },
+  { id: 'seller',        label: 'Seller Profile' },
+  { id: 'engineer',      label: 'Engineer Profile' },
+  { id: 'billing',       label: 'Billing & Subscriptions' },
+  { id: 'notifications', label: 'Notifications' },
+  { id: 'security',      label: 'Security' },
 ];
+const TAB_ICONS = {
+  profile:       <User size={15}/>,
+  seller:        <Store size={15}/>,
+  engineer:      <Zap size={15}/>,
+  billing:       <CreditCard size={15}/>,
+  notifications: <Bell size={15}/>,
+  security:      <Lock size={15}/>,
+};
 
 function F({ label, req, children, hint }) {
   return (
@@ -103,7 +113,7 @@ export default function Profile() {
   if (!user) {
     return (
       <div className="max-w-lg mx-auto px-5 py-20 text-center">
-        <div className="text-5xl mb-4">👤</div>
+        <div className="flex justify-center mb-4"><User size={56} className="text-solar-dim opacity-40"/></div>
         <h1 className="font-heading text-xl font-bold mb-3">Sign in to view your profile</h1>
         <div className="flex gap-3 justify-center">
           <button onClick={() => dispatch({ type:'OPEN_AUTH', payload:'login' })} className="btn-primary">Log In</button>
@@ -119,7 +129,7 @@ export default function Profile() {
     try {
       const res = await usersService.updateProfile(profile);
       dispatch({ type: 'SET_USER', payload: res?.data ?? res });
-      toast('Profile updated ✅', 'ok');
+      toast('Profile updated', 'ok');
     } catch(e) {
       toast(e.response?.data?.message || 'Save failed', 'err');
     } finally { setSaving(false); }
@@ -130,7 +140,7 @@ export default function Profile() {
     try {
       const res = await usersService.updateProfile({ notificationPrefs: notifPrefs });
       dispatch({ type: 'SET_USER', payload: res?.data ?? res });
-      toast('Notification preferences saved ✅', 'ok');
+      toast('Notification preferences saved', 'ok');
     } catch(e) {
       toast(e.response?.data?.message || 'Save failed', 'err');
     } finally { setSaving(false); }
@@ -141,7 +151,7 @@ export default function Profile() {
     try {
       const res = await usersService.updateSeller(seller);
       dispatch({ type: 'SET_USER', payload: res?.data ?? res });
-      toast('Seller profile updated ✅', 'ok');
+      toast('Seller profile updated', 'ok');
     } catch(e) {
       toast(e.response?.data?.message || 'Save failed', 'err');
     } finally { setSaving(false); }
@@ -154,7 +164,7 @@ export default function Profile() {
     try {
       await usersService.updateProfile({ password: pwForm.newPassword }); // use auth service in real app
       setPwForm({ oldPassword: '', newPassword: '', confirm: '' });
-      toast('Password changed successfully ✅', 'ok');
+      toast('Password changed successfully', 'ok');
     } catch(e) {
       toast(e.response?.data?.message || 'Failed to change password', 'err');
     } finally { setSaving(false); }
@@ -164,6 +174,7 @@ export default function Profile() {
 
   return (
     <div className="max-w-[1100px] mx-auto px-5 py-10">
+      <SEO title="My Profile" noindex />
       {/* Header */}
       <div className="flex items-center gap-5 mb-8 section-card p-6">
         {user.avatar ? (
@@ -181,9 +192,9 @@ export default function Profile() {
           </h1>
           <p className="text-solar-muted text-sm">{user.email}</p>
           <div className="flex gap-2 mt-2 flex-wrap">
-            {user.isSeller    && <span className="bg-solar-accent/10 text-solar-accent text-[10px] font-medium px-2 py-0.5 rounded-full border border-solar-accent/25">🏪 Seller</span>}
-            {user.isEngineer  && <span className="bg-blue-500/10 text-blue-400 text-[10px] font-medium px-2 py-0.5 rounded-full border border-blue-500/25">⚡ Engineer</span>}
-            <span className="bg-solar-surface text-solar-dim text-[10px] font-medium px-2 py-0.5 rounded-full border border-solar-border capitalize">🛒 {user.role}</span>
+            {user.isSeller    && <span className="bg-solar-accent/10 text-solar-accent text-[10px] font-medium px-2 py-0.5 rounded-full border border-solar-accent/25">Seller</span>}
+            {user.isEngineer  && <span className="bg-blue-500/10 text-blue-400 text-[10px] font-medium px-2 py-0.5 rounded-full border border-blue-500/25">Engineer</span>}
+            <span className="bg-solar-surface text-solar-dim text-[10px] font-medium px-2 py-0.5 rounded-full border border-solar-border capitalize">{user.role}</span>
           </div>
         </div>
         <div className="text-right hidden md:block">
@@ -205,7 +216,7 @@ export default function Profile() {
                     ? 'bg-solar-accent/10 text-solar-accent border border-solar-accent/20'
                     : 'text-solar-muted hover:bg-solar-surface hover:text-solar-text'
                 }`}>
-                <span>{t.icon}</span>{t.label}
+                {TAB_ICONS[t.id]}{t.label}
               </button>
             ))}
           </nav>
@@ -218,7 +229,7 @@ export default function Profile() {
           {activeTab === 'profile' && (
             <>
               <Section title="Personal Information">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <F label="First Name" req>
                     <input className="solar-input" value={profile.firstName}
                       onChange={e => setProfile(p => ({ ...p, firstName: e.target.value }))} />
@@ -249,12 +260,12 @@ export default function Profile() {
               </Section>
 
               <Section title="Account Info">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <div className="text-xs text-solar-muted mb-1">Email</div>
                     <div className="text-sm text-solar-text font-medium">{user.email}</div>
                     <div className={`text-[10px] mt-0.5 ${user.emailVerified ? 'text-green-400' : 'text-yellow-400'}`}>
-                      {user.emailVerified ? '✓ Verified' : '⚠ Not verified'}
+                      {user.emailVerified ? 'Verified' : 'Not verified'}
                     </div>
                   </div>
                   <div>
@@ -273,7 +284,7 @@ export default function Profile() {
             user.isSeller ? (
               <>
                 <Section title="Store & Business Details">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <F label="Store / Company Name" req>
                       <input className="solar-input" value={seller.storeName}
                         onChange={e => setSeller(s => ({ ...s, storeName: e.target.value }))} />
@@ -313,7 +324,7 @@ export default function Profile() {
                 </Section>
 
                 <Section title="Business Address">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <F label="Street Address">
                       <input className="solar-input col-span-2" value={seller.storeAddress}
                         onChange={e => setSeller(s => ({ ...s, storeAddress: e.target.value }))} />
@@ -334,9 +345,9 @@ export default function Profile() {
 
                 <Section title="Identity (KYC)">
                   <div className="bg-solar-accent/5 border border-solar-accent/20 rounded-xl p-3 text-xs text-solar-muted flex gap-2">
-                    🔒 Your NIN/ID details are stored securely and never shown publicly.
+                    Your NIN/ID details are stored securely and never shown publicly.
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <F label="ID Type">
                       <select className="solar-input" value={seller.govtIdType}
                         onChange={e => setSeller(s => ({ ...s, govtIdType: e.target.value }))}>
@@ -363,7 +374,7 @@ export default function Profile() {
               </>
             ) : (
               <div className="section-card p-10 text-center">
-                <div className="text-5xl mb-4">🏪</div>
+                <div className="flex justify-center mb-4"><Store size={48} className="text-solar-dim opacity-40"/></div>
                 <h2 className="font-heading text-lg font-bold mb-2">You're not a seller yet</h2>
                 <p className="text-solar-muted text-sm mb-6">Set up your seller profile to start listing solar products.</p>
                 <a href="/sell" className="btn-primary">Set Up Seller Profile →</a>
@@ -380,7 +391,7 @@ export default function Profile() {
                 </div>
               ) : engineerProfile ? (
                 <Section title="Your Engineer Profile">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div><span className="text-solar-muted text-xs">Full Name</span><div className="font-medium mt-0.5">{engineerProfile.fullName}</div></div>
                     <div><span className="text-solar-muted text-xs">Location</span><div className="font-medium mt-0.5">{engineerProfile.city}, {engineerProfile.state}</div></div>
                     <div><span className="text-solar-muted text-xs">Experience</span><div className="font-medium mt-0.5">{engineerProfile.yearsOfExperience} years</div></div>
@@ -402,7 +413,7 @@ export default function Profile() {
               ) : null
             ) : (
               <div className="section-card p-10 text-center">
-                <div className="text-5xl mb-4">⚡</div>
+                <div className="flex justify-center mb-4"><Zap size={48} className="text-solar-dim opacity-40"/></div>
                 <h2 className="font-heading text-lg font-bold mb-2">Register as an Engineer</h2>
                 <p className="text-solar-muted text-sm mb-6">Join Nigeria's solar engineer marketplace and get hired for installations.</p>
                 <a href="/become-engineer" className="btn-primary">Become an Engineer →</a>
@@ -417,7 +428,7 @@ export default function Profile() {
                 {user.subscriptionStatus === 'trialing' && (
                   <div className="bg-solar-accent/10 border border-solar-accent/20 rounded-xl p-5 mb-4">
                     <h3 className="font-heading font-bold text-solar-text flex items-center gap-2 text-lg">
-                      <span className="text-solar-accent">⚡</span> Free Trial Active
+                      <Zap size={18} className="text-solar-accent"/> Free Trial Active
                     </h3>
                     <p className="text-sm text-solar-muted mt-2">
                       You are currently on a 30-day free trial. Your trial expires on{' '}
@@ -426,7 +437,7 @@ export default function Profile() {
                       </span>.
                     </p>
                     {new Date() > new Date(user.trialEndsAt) && (
-                      <div className="mt-3 text-red-400 text-sm font-medium">⚠️ Your trial has expired. Upgrade your plan to continue selling.</div>
+                      <div className="mt-3 text-red-400 text-sm font-medium">Your trial has expired. Upgrade your plan to continue selling.</div>
                     )}
                   </div>
                 )}
@@ -434,7 +445,7 @@ export default function Profile() {
                 {user.subscriptionStatus === 'active' && (
                   <div className="bg-solar-green/10 border border-solar-green/20 rounded-xl p-5 mb-4">
                     <h3 className="font-heading font-bold text-solar-text flex items-center gap-2 text-lg">
-                      <span className="text-solar-green">✅</span> Pro {user.subscriptionTier === 'pro_seller' ? 'Seller' : 'Engineer'} Active
+                      <CheckCircle size={18} className="text-solar-green"/> Pro {user.subscriptionTier === 'pro_seller' ? 'Seller' : 'Engineer'} Active
                     </h3>
                     <p className="text-sm text-solar-muted mt-2">
                       Your subscription is active and renews automatically.
@@ -482,13 +493,13 @@ export default function Profile() {
             <Section title="Notification Preferences">
               <div className="space-y-4">
                 {[
-                  { key: 'email', icon: '📧', label: 'Email Notifications', desc: 'Order updates, price alerts, messages' },
-                  { key: 'sms',   icon: '📱', label: 'SMS Notifications',   desc: 'Critical alerts and OTPs only' },
-                  { key: 'push',  icon: '🔔', label: 'Push Notifications',  desc: 'In-app alerts and updates' },
+                  { key: 'email', icon: <Mail size={20}/>, label: 'Email Notifications', desc: 'Order updates, price alerts, messages' },
+                  { key: 'sms',   icon: <Smartphone size={20}/>, label: 'SMS Notifications',   desc: 'Critical alerts and OTPs only' },
+                  { key: 'push',  icon: <Bell size={20}/>, label: 'Push Notifications',  desc: 'In-app alerts and updates' },
                 ].map(({ key, icon, label, desc }) => (
                   <label key={key} className="flex items-center justify-between p-4 bg-solar-surface border border-solar-border rounded-xl cursor-pointer hover:border-solar-border2 transition-all">
                     <div className="flex items-center gap-3">
-                      <span className="text-xl">{icon}</span>
+                      <span className="text-solar-muted">{icon}</span>
                       <div>
                         <div className="text-sm font-medium text-solar-text">{label}</div>
                         <div className="text-xs text-solar-muted">{desc}</div>

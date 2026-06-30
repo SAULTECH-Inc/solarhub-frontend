@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { rfqsService, chatService } from '../services/index';
+import { FileText, MapPin, MessageCircle, Crown } from 'lucide-react';
 
 const fp = n => '₦' + Number(n).toLocaleString();
 
@@ -54,7 +55,7 @@ export default function MyProjects() {
       <h1 className="font-heading text-2xl font-bold mb-6">My Projects & Quotes</h1>
       {rfqs.length === 0 ? (
         <div className="section-card p-10 text-center">
-          <div className="text-4xl mb-4">📝</div>
+          <div className="flex justify-center mb-4"><FileText size={48} className="text-solar-dim opacity-40"/></div>
           <h2 className="font-heading text-xl mb-2">No projects yet</h2>
           <p className="text-solar-muted text-sm mb-6">Use the Solar Advisor to generate a technical specification and request quotes.</p>
           <button onClick={() => nav('/advisor')} className="btn-primary">Go to Solar Advisor</button>
@@ -74,11 +75,11 @@ export default function MyProjects() {
                   <div className="font-bold text-sm text-solar-accent">{rfq.bidCount} Bids Received</div>
                 </div>
                 <h2 className="font-heading text-lg font-bold mb-1">{rfq.systemSpecs?.title || 'Custom Solar Installation'}</h2>
-                <div className="text-sm text-solar-muted mb-3 flex items-center gap-2">📍 {rfq.city}, {rfq.state} <span className="opacity-50">|</span> ⏱️ Timeline: {rfq.timeline}</div>
+                <div className="text-sm text-solar-muted mb-3 flex items-center gap-2"><MapPin size={13} className="flex-shrink-0"/>{rfq.city}, {rfq.state} <span className="opacity-50">|</span> Timeline: {rfq.timeline}</div>
                 <div className="flex flex-wrap gap-2 text-xs">
-                  <span className="bg-solar-card2 px-2 py-1 border border-solar-border2 rounded">💡 Peak Load: {rfq.systemSpecs?.peakLoad || 'N/A'}W</span>
-                  <span className="bg-solar-card2 px-2 py-1 border border-solar-border2 rounded">⚡ Inverter: {rfq.systemSpecs?.inverter?.capacityKva}kVA</span>
-                  <span className="bg-solar-card2 px-2 py-1 border border-solar-border2 rounded">🔋 Storage: {rfq.systemSpecs?.batteries?.quantity} units</span>
+                  <span className="bg-solar-card2 px-2 py-1 border border-solar-border2 rounded">Peak Load: {rfq.systemSpecs?.peakLoad || 'N/A'}W</span>
+                  <span className="bg-solar-card2 px-2 py-1 border border-solar-border2 rounded">Inverter: {rfq.systemSpecs?.inverter?.capacityKva}kVA</span>
+                  <span className="bg-solar-card2 px-2 py-1 border border-solar-border2 rounded">Storage: {rfq.systemSpecs?.batteries?.quantity} units</span>
                 </div>
               </div>
               
@@ -100,7 +101,7 @@ export default function MyProjects() {
                               <div className="text-xs text-solar-dim">Verified Professional</div>
                             </div>
                           </div>
-                          {bid.status === 'accepted' && <span className="badge-green">👑 Awarded</span>}
+                          {bid.status === 'accepted' && <span className="badge-green inline-flex items-center gap-1"><Crown size={12}/>Awarded</span>}
                         </div>
                         <p className="text-sm text-solar-text mb-4 italic">"{bid.proposalText}"</p>
                         <div className="grid grid-cols-3 gap-3 mb-4">
@@ -120,11 +121,11 @@ export default function MyProjects() {
                         {rfq.status === 'open' && (
                           <div className="flex gap-3">
                             <button onClick={()=>acceptBid(rfq, bid)} className="btn-primary flex-1 py-2 text-sm">✓ Accept Quote & Hire</button>
-                            <button onClick={()=>messageBidder(rfq, bid)} className="btn-outline flex-1 py-2 text-sm">💬 Message</button>
+                            <button onClick={()=>messageBidder(rfq, bid)} className="btn-outline flex-1 py-2 text-sm inline-flex items-center justify-center gap-1.5"><MessageCircle size={13}/>Message</button>
                           </div>
                         )}
                         {bid.status === 'accepted' && (
-                           <button onClick={()=>messageBidder(rfq, bid)} className="btn-outline w-full py-2 text-sm">💬 Open Chat with Engineer</button>
+                           <button onClick={()=>messageBidder(rfq, bid)} className="btn-outline w-full py-2 text-sm inline-flex items-center justify-center gap-1.5"><MessageCircle size={13}/>Open Chat with Engineer</button>
                         )}
                       </div>
                     ))}
