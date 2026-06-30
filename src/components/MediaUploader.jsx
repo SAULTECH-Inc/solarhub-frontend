@@ -71,7 +71,7 @@ export default function MediaUploader({
     const item = value[idx];
     // Best-effort Cloudinary cleanup — only when publicId is known, never blocks UI
     if (item?.publicId) {
-      api.delete(`/uploads`, { params: { publicId: item.publicId } }).catch(() => {});
+      api.delete(`/uploads`, { params: { publicId: item.publicId, resourceType: item.resourceType || 'image' } }).catch(() => {});
     }
     onChange?.(value.filter((_, i) => i !== idx));
   }
