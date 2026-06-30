@@ -47,13 +47,13 @@ export default function Messages() {
   useEffect(() => {
     if (!user) return;
     const socket = connectSocket();
+    if (!socket) return;
     setSocketConnected(true);
 
     const handleNewMessage = (msg) => {
       if (msg.roomId === activeRoomId) {
         setMessages(prev => [...prev, msg]);
       } else {
-        // Update unread status/preview in room list
         setRooms(prevRooms => {
           const updated = [...prevRooms];
           const idx = updated.findIndex(r => r.id === msg.roomId);
@@ -68,7 +68,7 @@ export default function Messages() {
     };
 
     socket.on('new_message', handleNewMessage);
-    
+
     return () => {
       socket.off('new_message', handleNewMessage);
     };
@@ -78,7 +78,7 @@ export default function Messages() {
   useEffect(() => {
     if (!activeRoomId || !user) return;
     const socket = getSocket();
-    
+
     // Find room metadata
     const r = rooms.find(rc => rc.id === activeRoomId);
     if (!r) {
@@ -92,14 +92,14 @@ export default function Messages() {
     }
 
     // Join room & fetch history
-    socket.emit('join_room', { roomId: activeRoomId });
+    socket?.emit('join_room', { roomId: activeRoomId });
     chatService.getMessages(activeRoomId, 1, 100).then(res => {
       const data = res?.data || res;
       setMessages(data.data?.reverse() || []);
     }).catch(console.error);
 
     return () => {
-      socket.emit('leave_room', { roomId: activeRoomId });
+      socket?.emit('leave_room', { roomId: activeRoomId });
       setMessages([]);
     };
   }, [activeRoomId, user, rooms.length]);
@@ -126,7 +126,7 @@ export default function Messages() {
     if (!msg || !activeRoomId) return;
     setInput('');
     const socket = getSocket();
-    socket.emit('send_message', {
+    socket?.emit('send_message', {
       roomId: activeRoomId,
       content: msg,
     });

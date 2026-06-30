@@ -98,6 +98,7 @@ export default function ChatWidget() {
   useEffect(() => {
     if (!chatOpen || !user) return;
     const s = connectSocket();
+    if (!s) return;
     s.on('room_created', d => setRoomId(d.roomId));
     s.on('new_message',  d => {
       if (d.role === 'assistant' || d.role === 'human_agent' || d.role === 'system') {
@@ -111,7 +112,7 @@ export default function ChatWidget() {
         setLoading(false);
       }
     });
-    s.on('human_agent_joined', d => {
+    s.on('human_agent_joined', () => {
       setConnecting(false); setMode('human');
       setMsgs(m => [...m, { role:'system', text:'You are now connected with a live support agent.', time: new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) }]);
     });
@@ -129,9 +130,9 @@ export default function ChatWidget() {
     setMsgs(m => [...m, {role:'user', text:msg, time:t}]);
     setLoading(true);
 
-    if (user) {
-      // Use WebSocket
-      const s = getSocket();
+    const s = getSocket();
+    if (user && s?.connected) {
+      // Use WebSocket when available
       s.emit('send_message', { content:msg, roomId, type:'ai_support' });
       // Fallback timeout if no response in 10s
       setTimeout(() => setLoading(false), 10000);
@@ -169,8 +170,8 @@ export default function ChatWidget() {
     if (!user) { dispatch({type:'OPEN_AUTH',payload:'login'}); return; }
     setConnecting(true);
     setMsgs(m => [...m, {role:'system', text:'Connecting you to a human agent…', time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}]);
-    if (roomId) {
-      const s = getSocket();
+    const s = getSocket();
+    if (roomId && s?.connected) {
       s.emit('request_human', { roomId });
     } else {
       setTimeout(() => {
