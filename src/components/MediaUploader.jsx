@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { User, Camera } from 'lucide-react';
 import api from '../lib/apiClient';
 
 /**
@@ -67,6 +68,11 @@ export default function MediaUploader({
   }
 
   function remove(idx) {
+    const item = value[idx];
+    // Best-effort Cloudinary cleanup — only when publicId is known, never blocks UI
+    if (item?.publicId) {
+      api.delete(`/uploads`, { params: { publicId: item.publicId } }).catch(() => {});
+    }
     onChange?.(value.filter((_, i) => i !== idx));
   }
 
@@ -90,8 +96,8 @@ export default function MediaUploader({
               className="w-24 h-24 rounded-full object-cover border-4 border-solar-accent/30" />
           ) : (
             <div className="w-24 h-24 rounded-full bg-solar-surface border-2 border-dashed border-solar-border
-                            flex items-center justify-center text-3xl text-solar-dim group-hover:border-solar-accent/50 transition-all">
-              👤
+                            flex items-center justify-center text-solar-dim group-hover:border-solar-accent/50 transition-all">
+              <User size={32} className="text-solar-dim"/>
             </div>
           )}
           <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center
@@ -137,7 +143,7 @@ export default function MediaUploader({
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2">
-              <span className="text-3xl">📸</span>
+              <Camera size={32} className="text-solar-dim opacity-60"/>
               <div>
                 <p className="text-sm font-medium text-solar-text">Drag & drop or click to upload</p>
                 <p className="text-xs text-solar-dim mt-0.5">Images (JPG, PNG, WebP) · Videos (MP4, MOV) · Max 10 files</p>
