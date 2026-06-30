@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { advisorService } from '../services/index';
-import { APPL_DB, getAppIcon, toWatts } from '../data/appliances';
-
+import { APPL_DB, toWatts } from '../data/appliances';
+import SEO from '../components/SEO';
+import { Zap, Sun, BatteryFull, Plug, CheckCircle, XCircle, Wrench, ShoppingCart, Lightbulb, Check, X, Star, MapPin, ExternalLink } from 'lucide-react';
 const fp = n => '₦' + Number(n).toLocaleString();
 
 const STEPS = ['Appliances','Capacity','Preferences','Results'];
@@ -59,7 +60,7 @@ function AppliancePicker({ selected, onToggle, onAddCustom }) {
                 return (
                   <div key={item.n} onClick={()=>onToggle(item.n,item.w)}
                     className={`flex items-center justify-between px-4 py-2.5 cursor-pointer transition-colors text-sm ${sel?'bg-solar-accent/10 text-solar-accent':'hover:bg-solar-surface text-solar-text'}`}>
-                    <span>{getAppIcon(item.n)} {item.n}</span>
+                    <span>{item.n}</span>
                     <span className="text-xs text-solar-dim">{item.w}W est.</span>
                   </div>
                 );
@@ -92,7 +93,7 @@ function CapCard({ appliance: a, onChange }) {
     <div className="bg-solar-surface border border-solar-border rounded-xl p-4">
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2 font-medium text-sm">
-          <span className="text-lg">{getAppIcon(a.n)}</span>{a.n}
+          <Zap size={14} className="text-solar-accent opacity-60 flex-shrink-0"/>{a.n}
           {a.suggestW&&<button onClick={()=>{setPow(String(a.suggestW));setUnit('W');}} className="text-[11px] border border-solar-border text-solar-dim hover:border-solar-accent hover:text-solar-accent px-2 py-0.5 rounded-full">Suggest {a.suggestW}W</button>}
         </div>
         <div className="font-heading text-sm text-solar-accent">{wh>0?`${wh.toLocaleString()} Wh/day`:tw>0?`${Math.round(tw).toLocaleString()}W`:'—'}</div>
@@ -124,12 +125,12 @@ function RecDetail({ rec, adjLoad }) {
     <div className="animate-slide-up space-y-4">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <div className="font-heading text-xl font-bold">{rec.icon} {rec.title}</div>
+          <div className="font-heading text-xl font-bold">{rec.title}</div>
           <p className="text-solar-muted text-sm mt-1">{rec.focus}</p>
         </div>
         <div className="flex gap-1.5 flex-wrap">
-          {(rec.pros||[]).map(p=><span key={p} className="badge-green text-[10.5px]">✓ {p}</span>)}
-          {(rec.cons||[]).map(c=><span key={c} className="badge-red text-[10.5px]">⚠ {c}</span>)}
+          {(rec.pros||[]).map(p=><span key={p} className="badge-green text-[10.5px]">{p}</span>)}
+          {(rec.cons||[]).map(c=><span key={c} className="badge-red text-[10.5px]">{c}</span>)}
         </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -145,13 +146,13 @@ function RecDetail({ rec, adjLoad }) {
           </div>
         ))}
       </div>
-      {[{ico:'☀️',title:'Solar Panels',qty:`×${rec.panels?.quantity||0}`,tags:[`${rec.panels?.wattageEach||0}W each`,'amber',`${rec.panels?.totalWattage||0}W total`,'green',rec.panels?.type||'','blue'],note:rec.panels?.arrangement},
-        {ico:'🔋',title:'Batteries',qty:`×${rec.batteries?.quantity||0}`,tags:[`${rec.batteries?.capacityAhOrWh||`${rec.batteries?.capacityAh||0}Ah`} @ ${rec.batteries?.voltageEach||0}V`,'amber',rec.batteries?.type||'','green'],note:rec.batteries?.arrangement},
-        {ico:'⚡',title:'Inverter',qty:`${rec.inverter?.capacityKva||0}kVA`,tags:[rec.inverter?.type||'','amber',`${rec.inverter?.dcInputVoltage||rec.systemVoltage}V DC`,'blue',rec.inverter?.hasBuiltInMppt?'MPPT built-in':'',rec.inverter?.hasBuiltInMppt?'green':'',rec.inverter?.hasGridFailover?'Grid failover':'',rec.inverter?.hasGridFailover?'green':''],note:rec.inverter?.model&&`Example: ${rec.inverter.model}`},
+      {[{ico:<Sun size={20} className="text-solar-accent"/>,title:'Solar Panels',qty:`×${rec.panels?.quantity||0}`,tags:[`${rec.panels?.wattageEach||0}W each`,'amber',`${rec.panels?.totalWattage||0}W total`,'green',rec.panels?.type||'','blue'],note:rec.panels?.arrangement},
+        {ico:<BatteryFull size={20} className="text-solar-accent"/>,title:'Batteries',qty:`×${rec.batteries?.quantity||0}`,tags:[`${rec.batteries?.capacityAhOrWh||`${rec.batteries?.capacityAh||0}Ah`} @ ${rec.batteries?.voltageEach||0}V`,'amber',rec.batteries?.type||'','green'],note:rec.batteries?.arrangement},
+        {ico:<Zap size={20} className="text-solar-accent"/>,title:'Inverter',qty:`${rec.inverter?.capacityKva||0}kVA`,tags:[rec.inverter?.type||'','amber',`${rec.inverter?.dcInputVoltage||rec.systemVoltage}V DC`,'blue',rec.inverter?.hasBuiltInMppt?'MPPT built-in':'',rec.inverter?.hasBuiltInMppt?'green':'',rec.inverter?.hasGridFailover?'Grid failover':'',rec.inverter?.hasGridFailover?'green':''],note:rec.inverter?.model&&`Example: ${rec.inverter.model}`},
       ].map(card=>(
         <div key={card.title} className="bg-solar-surface border border-solar-border rounded-xl p-4">
           <div className="flex items-center gap-2.5 mb-2">
-            <span className="text-xl">{card.ico}</span>
+            <span className="flex items-center">{card.ico}</span>
             <h4 className="font-heading text-sm font-semibold flex-1">{card.title}</h4>
             <span className="font-heading text-lg font-bold text-solar-accent">{card.qty}</span>
           </div>
@@ -165,13 +166,13 @@ function RecDetail({ rec, adjLoad }) {
       ))}
       {rec.chargeController ? (
         <div className="bg-solar-surface border border-solar-border rounded-xl p-4">
-          <div className="flex items-center gap-2.5 mb-2"><span className="text-xl">🔌</span><h4 className="font-heading text-sm font-semibold flex-1">Charge Controller</h4><span className="font-heading text-lg font-bold text-solar-accent">{rec.chargeController.currentA}A</span></div>
+          <div className="flex items-center gap-2.5 mb-2"><Plug size={20} className="text-solar-accent flex-shrink-0"/><h4 className="font-heading text-sm font-semibold flex-1">Charge Controller</h4><span className="font-heading text-lg font-bold text-solar-accent">{rec.chargeController.currentA}A</span></div>
           <div className="flex gap-1.5"><span className="badge-green">{rec.chargeController.type||'MPPT'}</span><span className="badge-blue">Max {rec.chargeController.maxPvVoltage||150}V</span></div>
           {rec.chargeController.model&&<p className="text-solar-muted text-xs mt-2">Example: {rec.chargeController.model}</p>}
         </div>
       ) : (
         <div className="bg-solar-green/5 border border-solar-green/25 rounded-xl p-4 flex gap-3 items-start">
-          <span className="text-xl">✅</span>
+          <CheckCircle size={20} className="text-solar-green flex-shrink-0 mt-0.5"/>
           <div><div className="font-heading text-sm font-semibold text-solar-green">Charge Controller — Included</div>
           <p className="text-solar-muted text-xs mt-1">Built into the all-in-one hybrid inverter. No separate controller needed.</p></div>
         </div>
@@ -186,16 +187,152 @@ function RecDetail({ rec, adjLoad }) {
           </div>
         ))}
       </div>
-      {(rec.warnings||[]).length>0&&<div className="bg-red-500/5 border border-red-500/25 rounded-xl p-4">{rec.warnings.map((w,i)=><div key={i} className="text-sm text-red-400">⚠️ {w}</div>)}</div>}
+      {(rec.warnings||[]).length>0&&<div className="bg-red-500/5 border border-red-500/25 rounded-xl p-4">{rec.warnings.map((w,i)=><div key={i} className="text-sm text-red-400">{w}</div>)}</div>}
       {(rec.notes||[]).length>0&&(
         <ul className="space-y-0">
           {rec.notes.map((n,i)=>(
             <li key={i} className="flex gap-2.5 py-2.5 border-b border-solar-border last:border-0 text-sm text-solar-muted">
-              <span>{['💡','✅','📌','ℹ️','🔧'][i%5]}</span>{n}
+              <span className="text-solar-accent">•</span>{n}
             </li>
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+// ── Marketplace product card inside the drawer ──────────────
+function ProductCard({ p }) {
+  return (
+    <a
+      href={`/product/${p.slug}`}
+      className="flex flex-col bg-solar-card2 border border-solar-border hover:border-solar-accent rounded-xl overflow-hidden transition-colors group"
+    >
+      {p.thumbnail
+        ? <img src={p.thumbnail} alt={p.name} className="w-full h-32 object-cover"/>
+        : <div className="w-full h-32 bg-solar-surface flex items-center justify-center text-solar-dim text-xs">No image</div>
+      }
+      <div className="p-3 flex flex-col gap-1 flex-1">
+        <div className="text-xs font-medium text-solar-text line-clamp-2 leading-snug">{p.name}</div>
+        {p.brand && <div className="text-[10px] text-solar-dim">{p.brand}</div>}
+        <div className="font-heading text-sm font-bold text-solar-accent mt-auto">
+          ₦{p.price.toLocaleString()}
+        </div>
+        {p.averageRating > 0 && (
+          <div className="flex items-center gap-1 text-[10px] text-solar-dim">
+            <Star size={10} className="text-solar-accent fill-solar-accent"/>
+            {Number(p.averageRating).toFixed(1)}
+            <span>({p.reviewCount})</span>
+          </div>
+        )}
+        {p.location && (
+          <div className="flex items-center gap-1 text-[10px] text-solar-dim">
+            <MapPin size={9}/>{p.location}
+          </div>
+        )}
+        <div className="flex items-center gap-1 text-[10px] text-solar-accent group-hover:gap-2 transition-all mt-1">
+          View listing <ExternalLink size={9}/>
+        </div>
+      </div>
+    </a>
+  );
+}
+
+const DRAWER_TABS = [
+  { key: 'panels',      label: 'Panels' },
+  { key: 'batteries',   label: 'Batteries' },
+  { key: 'inverters',   label: 'Inverters' },
+  { key: 'controllers', label: 'Controller' },
+  { key: 'accessories', label: 'Accessories' },
+];
+
+function ComponentsDrawer({ sessionId, tier, preference, onClose }) {
+  const [items,   setItems]   = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState('');
+  const [tab,     setTab]     = useState('panels');
+
+  useEffect(() => {
+    if (!sessionId || !tier) { setLoading(false); return; }
+    const pref = preference === 'budget' ? 'budget'
+               : preference === 'quality' ? 'quality'
+               : 'balanced';
+    advisorService.getMarketplaceItems(sessionId, tier, pref)
+      .then(res => {
+        const d = res?.data ?? res;
+        setItems(d.products || {});
+        // default to first tab that has products
+        const first = DRAWER_TABS.find(t => (d.products?.[t.key] || []).length > 0);
+        if (first) setTab(first.key);
+      })
+      .catch(e => setError(e.message || 'Failed to load products'))
+      .finally(() => setLoading(false));
+  }, [sessionId, tier, preference]);
+
+  const products = items?.[tab] || [];
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}/>
+      <div className="relative bg-solar-card border border-solar-border2 rounded-t-2xl md:rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl animate-slide-up">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-solar-border">
+          <div>
+            <div className="font-heading text-base font-bold">Buy Components Individually</div>
+            <div className="text-xs text-solar-muted mt-0.5">Solar Maket listings matching your recommendation</div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-solar-surface hover:bg-solar-border transition-colors">
+            <X size={16} className="text-solar-muted"/>
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 px-5 pt-3 overflow-x-auto no-scrollbar border-b border-solar-border pb-3">
+          {DRAWER_TABS.map(t => {
+            const count = items?.[t.key]?.length || 0;
+            return (
+              <button key={t.key} onClick={() => setTab(t.key)}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${tab === t.key ? 'bg-solar-accent text-black' : 'bg-solar-surface text-solar-muted hover:text-solar-text'}`}>
+                {t.label}{count > 0 && <span className="ml-1 opacity-70">({count})</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-5">
+          {loading ? (
+            <div className="flex flex-col items-center gap-3 py-16">
+              <div className="w-8 h-8 border-4 border-solar-border border-t-solar-accent rounded-full animate-spin"/>
+              <div className="text-sm text-solar-muted">Loading Solar Maket listings…</div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12 text-solar-muted text-sm">{error}</div>
+          ) : products.length === 0 ? (
+            <div className="text-center py-12">
+              <ShoppingCart size={32} className="text-solar-dim mx-auto mb-3"/>
+              <div className="text-sm text-solar-muted">No listings found for this category yet.</div>
+              <a href="/marketplace" className="btn-outline text-xs mt-4 inline-flex items-center gap-1">
+                Browse Marketplace <ExternalLink size={12}/>
+              </a>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {products.map(p => <ProductCard key={p.id} p={p}/>)}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-solar-border flex items-center justify-between gap-3">
+          <div className="text-xs text-solar-dim">
+            {!loading && items && `${Object.values(items).flat().length} total listings across all categories`}
+          </div>
+          <a href="/marketplace" className="btn-outline text-xs inline-flex items-center gap-1">
+            View All Marketplace <ExternalLink size={11}/>
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
@@ -214,9 +351,10 @@ export default function Advisor() {
   const [adjLoad,   setAdjLoad]   = useState(0);
   const [peakLoad,  setPeakLoad]  = useState(0);
   const [activeRec, setActiveRec] = useState(0);
-  const [loading,   setLoading]   = useState(false);
-  const [tip,       setTip]       = useState(TIPS[0]);
-  const [error,     setError]     = useState('');
+  const [loading,     setLoading]     = useState(false);
+  const [tip,         setTip]         = useState(TIPS[0]);
+  const [error,       setError]       = useState('');
+  const [showDrawer,  setShowDrawer]  = useState(false);
   const tipRef = useRef(null);
 
   const toggleAppl = (name, w) => setPicked(p => p.find(x=>x.n===name) ? p.filter(x=>x.n!==name) : [...p, {n:name, suggestW:w}]);
@@ -246,10 +384,10 @@ export default function Advisor() {
       const res = await advisorService.calculate(rows, preferences);
       const d = res?.data ?? res;
       const results = d?.results || d;
-      if (results?.recommendations) { 
-        setRecs({ ...results, sessionId: d.session?.id }); 
-        setAdjLoad(results.adjustedDailyLoad||0); 
-        setPeakLoad(results.peakLoad||0); 
+      if (results?.recommendations) {
+        setRecs({ ...results, sessionId: d.session?.id });
+        setAdjLoad(results.adjustedDailyLoad||0);
+        setPeakLoad(results.peakLoad||0);
       }
       else { throw new Error('No recommendations returned'); }
     } catch(e) {
@@ -262,8 +400,14 @@ export default function Advisor() {
 
   return (
     <div className="max-w-[1100px] mx-auto px-5 py-10">
+      <SEO
+        title="AI Solar System Advisor — Design Your Solar Setup"
+        description="Tell our AI your appliances and power needs. Get 3 complete solar system designs — Budget, Performance, and All-in-One — with part lists and ₦ cost estimates tailored for Nigeria."
+        canonical="/advisor"
+        breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'Solar System Advisor' }]}
+      />
       <div className="flex items-center gap-4 mb-8 p-6 rounded-2xl" style={{background:'linear-gradient(135deg,rgba(245,158,11,0.06),rgba(16,185,129,0.04))',border:'1px solid #1e293b'}}>
-        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-solar-accent to-solar-orange flex items-center justify-center text-2xl flex-shrink-0">⚡</div>
+        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-solar-accent to-solar-orange flex items-center justify-center flex-shrink-0"><Zap size={24} className="text-black"/></div>
         <div>
           <h1 className="font-heading text-xl font-bold">Solar System Advisor</h1>
           <p className="text-solar-muted text-sm mt-1">List your appliances → AI designs <strong className="text-solar-text">3 complete system options</strong> with ₦ estimates.</p>
@@ -275,7 +419,7 @@ export default function Advisor() {
         {STEPS.map((s,i)=>(
           <div key={i} className="flex items-center flex-shrink-0">
             <div className="flex flex-col items-center">
-              <div className={`w-9 h-9 rounded-full border-2 flex items-center justify-center text-sm font-semibold font-heading transition-all ${i<step?'bg-solar-green/20 border-solar-green text-solar-green':i===step?'bg-solar-accent/20 border-solar-accent text-solar-accent':'bg-solar-surface border-solar-border text-solar-dim'}`}>{i<step?'✓':i+1}</div>
+              <div className={`w-9 h-9 rounded-full border-2 flex items-center justify-center text-sm font-semibold font-heading transition-all ${i<step?'bg-solar-green/20 border-solar-green text-solar-green':i===step?'bg-solar-accent/20 border-solar-accent text-solar-accent':'bg-solar-surface border-solar-border text-solar-dim'}`}>{i<step?<Check size={14}/>:i+1}</div>
               <div className={`text-[10px] mt-1 ${i===step?'text-solar-accent':i<step?'text-solar-green':'text-solar-dim'}`}>{s}</div>
             </div>
             {i<STEPS.length-1&&<div className={`w-12 h-0.5 mx-2 mb-5 ${i<step?'bg-solar-green':'bg-solar-border'}`}/>}
@@ -313,8 +457,8 @@ export default function Advisor() {
           <p className="text-solar-muted text-xs mb-5">Enter the power rating for each device. Hours/day is optional but improves accuracy.</p>
           {error&&<div className="p-3 bg-red-500/10 border border-red-500/25 rounded-xl text-sm text-red-400 mb-4">{error}</div>}
           <div className="space-y-3 mb-5">{picked.map((a,i)=><CapCard key={a.n} appliance={a} onChange={updateCap}/>)}</div>
-          <div className="bg-solar-surface border border-solar-border rounded-xl p-3.5 text-xs text-solar-muted mb-5">
-            💡 <strong className="text-solar-text">Tip:</strong> For A/C labeled "VA" on the nameplate, select VA unit. 1HP Inverter A/C ≈ 700W, Window type ≈ 900W.
+          <div className="bg-solar-surface border border-solar-border rounded-xl p-3.5 text-xs text-solar-muted mb-5 flex items-start gap-1.5">
+            <Lightbulb size={13} className="text-solar-accent flex-shrink-0 mt-px"/><span><strong className="text-solar-text">Tip:</strong> For A/C labeled "VA" on the nameplate, select VA unit. 1HP Inverter A/C ≈ 700W, Window type ≈ 900W.</span>
           </div>
           <div className="flex justify-between pt-5 border-t border-solar-border">
             <button onClick={()=>setStep(0)} className="btn-ghost">← Back</button>
@@ -343,7 +487,7 @@ export default function Advisor() {
             ))}
           </div>
           <div className="bg-solar-surface border border-solar-border rounded-xl p-4 mb-5">
-            <div className="font-heading text-xs uppercase tracking-widest text-solar-muted mb-3">📊 Load Summary</div>
+            <div className="font-heading text-xs uppercase tracking-widest text-solar-muted mb-3">Load Summary</div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
               <div><span className="text-solar-dim text-xs">Peak Load</span><div className="font-semibold text-solar-accent mt-0.5">{Math.round(totalW).toLocaleString()}W</div></div>
               <div><span className="text-solar-dim text-xs">Daily Energy</span><div className="font-semibold text-solar-accent mt-0.5">{totalWh>0?Math.round(totalWh).toLocaleString()+' Wh':'Add hours above'}</div></div>
@@ -353,7 +497,7 @@ export default function Advisor() {
           </div>
           <div className="flex justify-between pt-5 border-t border-solar-border">
             <button onClick={()=>setStep(1)} className="btn-ghost">← Back</button>
-            <button onClick={calculate} className="btn-primary btn-lg">⚡ Calculate My Solar System</button>
+            <button onClick={calculate} className="btn-primary btn-lg inline-flex items-center gap-2"><Zap size={16}/>Calculate My Solar System</button>
           </div>
         </div>
       )}
@@ -369,7 +513,7 @@ export default function Advisor() {
             </div>
           ) : error ? (
             <div className="section-card p-10 text-center">
-              <div className="text-4xl mb-4">❌</div>
+              <div className="flex justify-center mb-4"><XCircle size={48} className="text-red-400"/></div>
               <div className="font-heading text-base mb-3 text-solar-text">Could not generate recommendations</div>
               <p className="text-solar-muted text-sm mb-6">{error}</p>
               <button onClick={()=>setStep(2)} className="btn-outline">← Try Again</button>
@@ -388,16 +532,15 @@ export default function Advisor() {
                 {(recs.recommendations||[]).map((r,i)=>(
                   <div key={r.id} onClick={()=>setActiveRec(i)}
                     className={`rec-tab flex-1 min-w-[165px] ${activeRec===i?'active':''}`}>
-                    <div className="text-2xl mb-1.5">{r.icon}</div>
                     <div className="font-heading text-sm font-semibold mb-1">{r.title}</div>
                     <div className="text-[11px] text-solar-muted mb-2">{r.tagline}</div>
                     <div className="font-heading text-xs text-solar-accent mb-2">
                       {fp(r.estimatedCostNGN?.totalMin||0)}–{fp(r.estimatedCostNGN?.totalMax||0)}
                     </div>
                     <div className="flex flex-wrap gap-1">
-                      {r.id==='budget'&&<><span className="rpill pg-">💰 Low cost</span><span className="rpill pr-">⚠ Short life</span></>}
-                      {r.id==='performance'&&<><span className="rpill pg-">🔋 Long life</span><span className="rpill pa-">⚡ Efficient</span></>}
-                      {r.id==='spacesaver'&&<><span className="rpill pg-">📦 Compact</span><span className="rpill pa-">📱 WiFi</span></>}
+                      {r.id==='budget'&&<><span className="rpill pg-">Low cost</span><span className="rpill pr-">Short life</span></>}
+                      {r.id==='performance'&&<><span className="rpill pg-">Long life</span><span className="rpill pa-">Efficient</span></>}
+                      {r.id==='spacesaver'&&<><span className="rpill pg-">Compact</span><span className="rpill pa-">WiFi</span></>}
                     </div>
                   </div>
                 ))}
@@ -409,8 +552,8 @@ export default function Advisor() {
                 <div className="p-6 bg-gradient-to-br from-solar-accent/10 to-transparent border border-solar-accent/30 rounded-xl flex flex-col items-center">
                   <h3 className="font-heading text-lg font-bold mb-2 text-solar-text">Want this specific setup installed?</h3>
                   <p className="text-solar-muted text-sm mb-4">Skip the hassle of buying individual parts. Send this AI blueprint directly to verified engineers and sellers to get full installation quotes.</p>
-                  <Link to={`/request-quote?session=${recs.sessionId||''}&tier=${recs.recommendations[activeRec].id}`} className="btn-primary btn-lg shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:scale-[1.02] transition-transform">
-                    🛠️ Get Quotes from Engineers
+                  <Link to={`/request-quote?session=${recs.sessionId||''}&tier=${recs.recommendations[activeRec].id}`} className="btn-primary btn-lg shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:scale-[1.02] transition-transform inline-flex items-center gap-2">
+                    <Wrench size={16}/>Get Quotes from Engineers
                   </Link>
                 </div>
                 <div className="flex items-center justify-center gap-4">
@@ -418,8 +561,22 @@ export default function Advisor() {
                   <span className="text-xs text-solar-dim font-heading uppercase tracking-widest">OR</span>
                   <div className="h-px bg-solar-border flex-1 max-w-[150px]"></div>
                 </div>
-                <Link to="/marketplace" className="btn-outline btn-lg inline-flex mt-4 w-[400px] max-w-full justify-center">🛒 Buy Components Myself</Link>
-                <div className="text-[11px] text-solar-dim mt-2 tracking-wide">Estimates only — verify hardware availability</div>
+                <button
+                  onClick={() => setShowDrawer(true)}
+                  className="btn-outline btn-lg inline-flex mt-4 w-[400px] max-w-full justify-center items-center gap-2"
+                >
+                  <ShoppingCart size={16}/>Buy Components Myself
+                </button>
+                <div className="text-[11px] text-solar-dim mt-2 tracking-wide">Pulls real listings from Solar Maket sorted by your preference</div>
+
+                {showDrawer && recs?.sessionId && (
+                  <ComponentsDrawer
+                    sessionId={recs.sessionId}
+                    tier={recs.recommendations[activeRec]?.id}
+                    preference={prefs.pri === 'budget' ? 'budget' : prefs.pri === 'quality' ? 'quality' : 'balanced'}
+                    onClose={() => setShowDrawer(false)}
+                  />
+                )}
               </div>
             </>
           ) : null}

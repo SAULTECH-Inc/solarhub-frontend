@@ -2,10 +2,12 @@ import api from '../lib/apiClient';
 
 // ── Advisor ───────────────────────────────────────────────────
 export const advisorService = {
-  calculate:    (appliances, preferences) => api.post('/advisor/calculate', { appliances, preferences }),
-  getSessions:  ()    => api.get('/advisor/sessions'),
-  getSession:   (id)  => api.get(`/advisor/sessions/${id}`),
-  saveSelection:(id, recommendationId) => api.patch(`/advisor/sessions/${id}/select`, { recommendationId }),
+  calculate:           (appliances, preferences) => api.post('/advisor/calculate', { appliances, preferences }),
+  getSessions:         ()    => api.get('/advisor/sessions'),
+  getSession:          (id)  => api.get(`/advisor/sessions/${id}`),
+  saveSelection:       (id, recommendationId) => api.patch(`/advisor/sessions/${id}/select`, { recommendationId }),
+  getMarketplaceItems: (sessionId, tier, preference = 'balanced') =>
+    api.get(`/advisor/sessions/${sessionId}/marketplace-items`, { params: { tier, preference } }),
 };
 
 // ── Favourites ────────────────────────────────────────────────
@@ -73,6 +75,19 @@ export const categoriesService = {
   getBySlug:  (slug) => api.get(`/categories/${slug}`),
   getSchema:  (id)   => api.get(`/categories/${id}/spec-schema`),
 };
+
+// ── Subscriptions ─────────────────────────────────────────────
+export const subscriptionsService = {
+  getPlans:        ()              => api.get('/subscriptions/plans'),
+  subscribe:       (plan, currency) => api.post('/subscriptions/subscribe', { plan, currency }),
+  verifyPaystack:  (ref)           => api.get(`/subscriptions/verify/paystack/${ref}`),
+  cancel:          ()              => api.post('/subscriptions/cancel'),
+  getInvoices:     (p, l)          => api.get('/subscriptions/invoices', { params: { page: p, limit: l } }),
+  getInvoice:      (id)            => api.get(`/subscriptions/invoices/${id}`),
+};
+
+// ── Logistics ────────────────────────────────────────────────
+export { logisticsService } from './logistics.service';
 
 // ── RFQs (Project Bidding) ──────────────────────────────────
 export const rfqsService = {
