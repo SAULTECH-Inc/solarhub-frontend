@@ -20,7 +20,7 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && (!user || user.role !== 'admin')) {
+    if (!authLoading && (!user || !['admin', 'super_admin'].includes(user.role))) {
       navigate('/', { replace: true });
     }
   }, [user, authLoading, navigate]);
@@ -33,7 +33,7 @@ export default function AdminLayout() {
     );
   }
 
-  if (user.role !== 'admin') return null;
+  if (!['admin', 'super_admin'].includes(user.role)) return null;
 
   return (
     <div className="min-h-screen bg-solar-bg flex">
