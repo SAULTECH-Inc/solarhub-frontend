@@ -41,6 +41,12 @@ import SellerProducts     from './pages/SellerProducts';
 import BecomeLogistics    from './pages/BecomeLogistics';
 import LogisticsDashboard from './pages/LogisticsDashboard';
 import LogisticsProviders from './pages/LogisticsProviders';
+import AdminLayout        from './pages/admin/AdminLayout';
+import AdminDashboard     from './pages/admin/AdminDashboard';
+import AdminUsers         from './pages/admin/AdminUsers';
+import AdminProducts      from './pages/admin/AdminProducts';
+import AdminOrders        from './pages/admin/AdminOrders';
+import AdminHealth        from './pages/admin/AdminHealth';
 
 function InstallPwaPrompt() {
   const [deferredPrompt, setDeferredPrompt] = React.useState(null);
@@ -175,6 +181,16 @@ export default function App() {
             <Route path="/become-logistics"   element={<BecomeLogistics />} />
             <Route path="/logistics/dashboard" element={<LogisticsDashboard />} />
             <Route path="/logistics/providers" element={<LogisticsProviders />} />
+
+            {/* Admin — nested under AdminLayout (role guard inside) */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index                element={<AdminDashboard />} />
+              <Route path="users"         element={<AdminUsers />} />
+              <Route path="products"      element={<AdminProducts />} />
+              <Route path="orders"        element={<AdminOrders />} />
+              <Route path="health"        element={<AdminHealth />} />
+            </Route>
+
             <Route path="*" element={
               <div className="text-center py-24 text-solar-dim">
                 <div className="flex justify-center mb-4"><Sun size={56} className="text-solar-accent opacity-50"/></div>
