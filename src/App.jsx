@@ -41,6 +41,7 @@ import SellerProducts     from './pages/SellerProducts';
 import BecomeLogistics    from './pages/BecomeLogistics';
 import LogisticsDashboard from './pages/LogisticsDashboard';
 import LogisticsProviders from './pages/LogisticsProviders';
+import Escrow             from './pages/Escrow';
 
 function InstallPwaPrompt() {
   const [deferredPrompt, setDeferredPrompt] = React.useState(null);
@@ -175,6 +176,8 @@ export default function App() {
             <Route path="/become-logistics"   element={<BecomeLogistics />} />
             <Route path="/logistics/dashboard" element={<LogisticsDashboard />} />
             <Route path="/logistics/providers" element={<LogisticsProviders />} />
+            <Route path="/escrow"              element={<Escrow />} />
+            <Route path="/escrow/:escrowId"    element={<Escrow />} />
             <Route path="*" element={
               <div className="text-center py-24 text-solar-dim">
                 <div className="flex justify-center mb-4"><Sun size={56} className="text-solar-accent opacity-50"/></div>

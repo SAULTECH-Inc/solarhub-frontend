@@ -2,6 +2,7 @@ import { createContext, useContext, useReducer, useCallback, useEffect } from 'r
 import { authService } from '../services/auth.service';
 import { cartService, ordersService } from '../services/commerce.service';
 import { favouritesService, notificationsService } from '../services/index';
+import { platformService } from '../services/escrow.service';
 import { tokenStorage } from '../lib/apiClient';
 import { connectSocket, disconnectSocket } from '../lib/socket';
 
@@ -38,7 +39,8 @@ function reducer(state, action) {
     case 'CLOSE_AUTH':       return { ...state, authModal: null };
     case 'SET_TOAST':        return { ...state, toast: action.payload };
     case 'CLEAR_TOAST':      return { ...state, toast: null };
-    case 'SET_NOTIF_COUNT':  return { ...state, unreadNotifications: action.payload };
+    case 'SET_NOTIF_COUNT':    return { ...state, unreadNotifications: action.payload };
+    case 'SET_PLATFORM':       return { ...state, platformSettings: action.payload, escrowEnabled: action.payload?.escrow_enabled === 'true' };
     default: return state;
   }
 }
@@ -49,6 +51,7 @@ const INIT = {
   favourites: [], orders: [],
   cartOpen: false, chatOpen: false,
   authModal: null, toast: null, unreadNotifications: 0,
+  platformSettings: {}, escrowEnabled: false,
 };
 
 export function AppProvider({ children }) {
@@ -94,6 +97,11 @@ export function AppProvider({ children }) {
   }, [expireSession]);
 
   useEffect(() => {
+    // Fetch platform settings on every boot (no auth required)
+    platformService.getSettings()
+      .then(res => dispatch({ type: 'SET_PLATFORM', payload: res?.data ?? res }))
+      .catch(() => {});
+
     const token = tokenStorage.getAccess();
     if (!token) { dispatch({ type: 'SET_AUTH_LOADING', payload: false }); return; }
 

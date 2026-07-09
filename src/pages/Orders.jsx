@@ -4,7 +4,151 @@ import { ordersService, deliveryService } from '../services/commerce.service';
 import { useApp } from '../context/AppContext';
 import { ORDER_STEPS } from '../context/AppContext';
 import SEO from '../components/SEO';
-import { Package, MapPin, MessageCircle, Star, Zap } from 'lucide-react';
+import { Package, MapPin, MessageCircle, Star, Zap, AlertCircle, Shield, Loader2 } from 'lucide-react';
+import api from '../lib/apiClient';
+import { escrowService } from '../services/escrow.service';
+
+const DISPUTE_CATEGORIES = {
+  order: [
+    { value:'item_not_received',     label:'Item Not Received' },
+    { value:'item_not_as_described', label:'Item Not As Described' },
+    { value:'damaged_item',          label:'Damaged Item' },
+    { value:'logistics_issue',       label:'Logistics / Delivery Issue' },
+    { value:'other',                 label:'Other' },
+  ],
+  payment: [
+    { value:'unauthorized_charge', label:'Unauthorized Charge' },
+    { value:'double_charge',       label:'Double Charge' },
+    { value:'refund_not_issued',   label:'Refund Not Issued' },
+    { value:'other',               label:'Other' },
+  ],
+  fraud: [
+    { value:'scam_attempt',           label:'Scam Attempt' },
+    { value:'off_platform_payment',   label:'Asked to Pay Outside Platform' },
+    { value:'account_compromised',    label:'My Account Was Compromised' },
+    { value:'fake_product',           label:'Counterfeit / Fake Product' },
+  ],
+  inquiry: [
+    { value:'other', label:'General Inquiry or Complaint' },
+  ],
+};
+
+function RaiseDisputeModal({ order, onClose }) {
+  const [type,        setType]        = useState('order');
+  const [category,    setCategory]    = useState('');
+  const [subject,     setSubject]     = useState('');
+  const [description, setDescription] = useState('');
+  const [amount,      setAmount]      = useState('');
+  const [loading,     setLoading]     = useState(false);
+  const [done,        setDone]        = useState(false);
+  const [error,       setError]       = useState('');
+
+  const cats = DISPUTE_CATEGORIES[type] || [];
+
+  async function submit(e) {
+    e.preventDefault();
+    if (!category || !subject.trim() || !description.trim()) {
+      setError('Please fill all required fields'); return;
+    }
+    setLoading(true); setError('');
+    try {
+      await api.post('/disputes', {
+        type, category, subject, description,
+        orderId: order?.id,
+        amountDisputed: amount ? Number(amount) : undefined,
+      });
+      setDone(true);
+    } catch(err) {
+      setError(err.message || 'Failed to submit. Please try again.');
+    } finally { setLoading(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[300] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+      <div className="bg-solar-card border border-solar-border rounded-2xl w-full max-w-lg shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-5 border-b border-solar-border sticky top-0 bg-solar-card">
+          <h3 className="font-heading text-base font-semibold">Raise a Dispute / Report Issue</h3>
+          <button onClick={onClose} className="text-solar-dim hover:text-solar-text text-xl leading-none">✕</button>
+        </div>
+        <div className="p-5">
+          {done ? (
+            <div className="text-center py-8 space-y-3">
+              <div className="text-5xl">✅</div>
+              <div className="font-heading text-lg font-semibold text-solar-text">Dispute Submitted</div>
+              <p className="text-solar-muted text-sm">Our team will review your case and respond within 24–48 hours. You can track progress via support chat.</p>
+              <button onClick={onClose} className="btn-primary mt-2">Close</button>
+            </div>
+          ) : (
+            <form onSubmit={submit} className="space-y-4">
+              {order && (
+                <div className="bg-solar-card2 rounded-lg px-3 py-2 text-xs text-solar-muted">
+                  Order: <span className="font-mono text-solar-accent">{order.orderNumber}</span>
+                </div>
+              )}
+
+              {/* Type */}
+              <div>
+                <label className="block text-xs text-solar-dim uppercase tracking-wider mb-2">Issue Type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[['order','📦 Order'],['payment','💳 Payment'],['fraud','🚨 Fraud'],['inquiry','💬 Inquiry']].map(([v,l]) => (
+                    <button type="button" key={v} onClick={() => { setType(v); setCategory(''); }}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all ${type===v?'border-solar-accent bg-solar-accent/10 text-solar-accent':'border-solar-border text-solar-muted hover:border-solar-border2'}`}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Category */}
+              <div>
+                <label className="block text-xs text-solar-dim uppercase tracking-wider mb-1.5">Category <span className="text-solar-red">*</span></label>
+                <select className="solar-input" value={category} onChange={e => setCategory(e.target.value)} required>
+                  <option value="">Select a category…</option>
+                  {cats.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                </select>
+              </div>
+
+              {/* Subject */}
+              <div>
+                <label className="block text-xs text-solar-dim uppercase tracking-wider mb-1.5">Subject <span className="text-solar-red">*</span></label>
+                <input className="solar-input" placeholder="Brief summary of the issue…"
+                  value={subject} onChange={e => setSubject(e.target.value)} maxLength={200} required />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-xs text-solar-dim uppercase tracking-wider mb-1.5">Full Description <span className="text-solar-red">*</span></label>
+                <textarea className="input-field w-full h-28 resize-none"
+                  placeholder="Please describe what happened in detail — include dates, amounts, and any communication with the seller…"
+                  value={description} onChange={e => setDescription(e.target.value)} required />
+              </div>
+
+              {/* Amount */}
+              {(type === 'order' || type === 'payment') && (
+                <div>
+                  <label className="block text-xs text-solar-dim uppercase tracking-wider mb-1.5">Amount in Dispute (₦)</label>
+                  <input type="number" className="solar-input" placeholder="Leave blank if not a financial dispute"
+                    value={amount} onChange={e => setAmount(e.target.value)} min="0" />
+                </div>
+              )}
+
+              {error && (
+                <div className="flex items-center gap-2 text-solar-red text-xs bg-solar-red/10 border border-solar-red/20 rounded-lg px-3 py-2">
+                  <AlertCircle size={14} /> {error}
+                </div>
+              )}
+
+              <button type="submit" disabled={loading}
+                className="btn-primary w-full flex items-center justify-center gap-2">
+                {loading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '🎫 Submit Dispute'}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 const fp = n => '₦' + Number(n).toLocaleString();
 
 const STATUS_BADGE = {
@@ -67,13 +211,16 @@ function TrackingView({ orderId }) {
 }
 
 export default function Orders() {
-  const { user, dispatch } = useApp();
+  const { user, dispatch, escrowEnabled } = useApp();
   const nav = useNavigate();
   const { orderId } = useParams();
-  const [orders,  setOrders]  = useState([]);
-  const [selected,setSelected]= useState(orderId || null);
-  const [loading, setLoading] = useState(true);
-  const [selOrder,setSelOrder]= useState(null);
+  const [orders,         setOrders]         = useState([]);
+  const [selected,       setSelected]       = useState(orderId || null);
+  const [loading,        setLoading]        = useState(true);
+  const [selOrder,       setSelOrder]       = useState(null);
+  const [disputeModal,   setDisputeModal]   = useState(false);
+  const [escrowLoading,  setEscrowLoading]  = useState(false);
+  const [existingEscrow, setExistingEscrow] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -88,8 +235,14 @@ export default function Orders() {
       ordersService.getById(selected)
         .then(r => setSelOrder(r?.data ?? r))
         .catch(() => {});
-    } else { setSelOrder(null); }
-  }, [selected]);
+      // Check if escrow already exists for this order
+      if (escrowEnabled) {
+        escrowService.getByOrder(selected)
+          .then(r => setExistingEscrow(r?.data ?? r))
+          .catch(() => setExistingEscrow(null));
+      }
+    } else { setSelOrder(null); setExistingEscrow(null); }
+  }, [selected, escrowEnabled]);
 
   if (!user) return (
     <div className="text-center py-24 text-solar-dim">
@@ -177,6 +330,26 @@ export default function Orders() {
             <div className="section-card p-4 space-y-2">
               <button onClick={() => dispatch({ type:'TOGGLE_CHAT' })} className="btn-outline w-full text-sm py-2 inline-flex items-center justify-center gap-1.5"><MessageCircle size={14}/>Chat Support</button>
               {selOrder.status === 'delivered' && <button className="btn-outline w-full text-sm py-2 inline-flex items-center justify-center gap-1.5"><Star size={14}/>Leave Review</button>}
+
+              {/* Escrow: show if feature is on, order is unpaid, and no escrow yet */}
+              {escrowEnabled && selOrder.paymentStatus === 'pending' && !existingEscrow && (
+                <button
+                  disabled={escrowLoading}
+                  onClick={() => nav(`/escrow?orderId=${selOrder.id}`)}
+                  className="btn-outline w-full text-sm py-2 inline-flex items-center justify-center gap-1.5 border-solar-accent/40 text-solar-accent hover:bg-solar-accent/10">
+                  {escrowLoading ? <Loader2 size={14} className="animate-spin"/> : <Shield size={14}/>}
+                  Pay with Escrow
+                </button>
+              )}
+              {/* Show escrow status link if one exists */}
+              {escrowEnabled && existingEscrow && (
+                <button onClick={() => nav(`/escrow/${existingEscrow.id}`)}
+                  className="btn-outline w-full text-sm py-2 inline-flex items-center justify-center gap-1.5 border-solar-accent/40 text-solar-accent hover:bg-solar-accent/10">
+                  <Shield size={14}/>View Escrow
+                </button>
+              )}
+
+              <button onClick={() => setDisputeModal(true)} className="w-full text-sm py-2 inline-flex items-center justify-center gap-1.5 text-solar-red border border-solar-red/30 rounded-lg hover:bg-solar-red/10 transition-all"><AlertCircle size={14}/>Raise a Dispute</button>
             </div>
           </div>
         </div>
@@ -203,6 +376,13 @@ export default function Orders() {
             </div>
           ))}
         </div>
+      )}
+
+      {disputeModal && (
+        <RaiseDisputeModal
+          order={selOrder}
+          onClose={() => setDisputeModal(false)}
+        />
       )}
     </div>
   );
