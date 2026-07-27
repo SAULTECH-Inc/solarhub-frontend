@@ -33,28 +33,29 @@ const STATS = [
 
 const HOW_IT_WORKS = [
   {
-    icon: <Search size={24} className="text-solar-accent" />,
+    icon: <Zap size={24} className="text-solar-accent" />,
     step: '01',
-    title: 'Browse & Compare',
-    desc: 'Search thousands of solar products from verified sellers across Africa. Filter by specs, price, and location.',
+    title: 'Size Your System',
+    desc: 'Tell our AI Solar Advisor your appliances and power needs. It instantly designs 3 system options — Budget, Performance, All-in-One — with full part lists and cost estimates.',
+    link: { to: '/advisor', label: 'Try Solar Advisor →' },
   },
   {
-    icon: <MessageCircle size={24} className="text-solar-accent" />,
+    icon: <Search size={24} className="text-solar-accent" />,
     step: '02',
-    title: 'Connect with Sellers',
-    desc: 'Chat directly with sellers, ask technical questions, and negotiate. Our Solar Advisor AI helps you pick the right system.',
+    title: 'Browse & Source',
+    desc: 'Shop the exact parts from your advisor report — or explore thousands of products from verified sellers across 30+ African countries.',
   },
   {
     icon: <CreditCard size={24} className="text-solar-accent" />,
     step: '03',
-    title: 'Pay Securely',
-    desc: 'Checkout with confidence using our escrow payment protection — funds are only released when you confirm delivery.',
+    title: 'Pay with Escrow',
+    desc: 'Your funds are held safely in escrow until you confirm delivery and satisfaction. Sellers only get paid when you\'re happy.',
   },
   {
     icon: <Package size={24} className="text-solar-accent" />,
     step: '04',
     title: 'Receive & Power Up',
-    desc: 'Track your order in real time. Once delivered and inspected, release payment to the seller. Simple.',
+    desc: 'Track your shipment in real time. Confirm receipt, release payment, and start generating clean energy.',
   },
 ];
 
@@ -237,15 +238,67 @@ export default function Home() {
             <div className="hidden md:block absolute top-[52px] left-[calc(12.5%+24px)] right-[calc(12.5%+24px)] h-px bg-solar-border z-0" />
 
             {HOW_IT_WORKS.map((item, i) => (
-              <div key={i} className="relative z-10 bg-solar-card border border-solar-border rounded-2xl p-6 text-center card-hover">
-                <div className="w-12 h-12 rounded-full bg-solar-accent/10 border border-solar-accent/30 flex items-center justify-center mx-auto mb-4">
+              <div key={i}
+                className={`relative z-10 bg-solar-card border rounded-2xl p-6 text-center card-hover flex flex-col ${i === 0 ? 'border-solar-accent/40' : 'border-solar-border'}`}
+                style={i === 0 ? { background: 'linear-gradient(160deg, rgba(245,158,11,0.07), transparent)' } : {}}>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${i === 0 ? 'bg-solar-accent/20 border border-solar-accent/50' : 'bg-solar-accent/10 border border-solar-accent/30'}`}>
                   {item.icon}
                 </div>
                 <div className="font-heading text-[10px] tracking-widest text-solar-accent mb-2">{item.step}</div>
                 <h3 className="font-heading text-sm font-bold text-solar-text mb-2">{item.title}</h3>
-                <p className="text-xs text-solar-muted leading-relaxed">{item.desc}</p>
+                <p className="text-xs text-solar-muted leading-relaxed flex-1">{item.desc}</p>
+                {item.link && (
+                  <Link to={item.link.to} className="mt-4 text-xs font-semibold text-solar-accent hover:underline inline-flex items-center justify-center gap-1">
+                    {item.link.label}
+                  </Link>
+                )}
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* ── Solar Advisor Spotlight ──────────────────────────────────── */}
+        <section className="pb-14">
+          <div className="rounded-2xl overflow-hidden border border-solar-accent/30"
+            style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.10) 0%, rgba(245,158,11,0.03) 60%, transparent 100%)' }}>
+            <div className="flex flex-col md:flex-row items-center gap-8 p-8 md:p-10">
+              <div className="flex-1 min-w-0">
+                <div className="inline-flex items-center gap-2 bg-solar-accent/15 border border-solar-accent/30 rounded-full px-3 py-1 text-xs font-semibold text-solar-accent mb-4">
+                  <Zap size={12} /> AI-Powered Feature
+                </div>
+                <h2 className="font-heading text-2xl md:text-3xl font-bold mb-3">
+                  Meet the <span className="text-solar-accent">Solar Advisor</span>
+                </h2>
+                <p className="text-solar-muted text-sm leading-relaxed mb-5 max-w-lg">
+                  Not sure what solar system you need? Tell our AI your appliances, daily usage, and budget. In seconds it generates <strong className="text-solar-text">3 complete system designs</strong> — Budget, Performance, and All-in-One — each with a full parts list, wiring overview, and ₦ cost estimate. No engineer needed.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Link to="/advisor" className="btn-primary inline-flex items-center gap-1.5"><Zap size={15}/>Try it free — no sign-up needed</Link>
+                  <Link to="/engineers" className="btn-ghost text-sm inline-flex items-center gap-1">Or hire an engineer →</Link>
+                </div>
+              </div>
+
+              {/* mini feature list */}
+              <div className="flex-shrink-0 w-full md:w-64 space-y-3">
+                {[
+                  ['Appliance input', 'List your fridge, AC, lights, devices'],
+                  ['3 system tiers', 'Budget · Performance · All-in-One'],
+                  ['Full parts list', 'Panels, batteries, inverter, cables'],
+                  ['₦ cost estimate', 'Prices based on current market data'],
+                  ['Instant results', 'No waiting, no forms, no sales calls'],
+                ].map(([title, detail]) => (
+                  <div key={title} className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-solar-accent/20 border border-solar-accent/40 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-solar-accent" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-solar-text">{title}</div>
+                      <div className="text-[11px] text-solar-dim leading-snug">{detail}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
